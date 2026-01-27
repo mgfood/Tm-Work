@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ussa.tm — Биржа услуг</title>
+    <style>
+        /* Общие стили и обнуление */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f4f7f6; 
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Шапка */
+        header {
+            background: #ffffff;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .logo { font-size: 24px; font-weight: 800; color: #2563eb; }
+        .logo span { color: #333; }
+        
+        .btn-main {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-main:hover { background: #1d4ed8; }
+
+        /* Hero блок с градиентом */
+        .hero {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            padding: 60px 20px;
+            text-align: center;
+            color: white;
+        }
+        .hero h1 { font-size: 28px; margin-bottom: 15px; }
+        .hero p { opacity: 0.9; margin-bottom: 30px; }
+
+        /* Поиск */
+        .search-container {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            background: white;
+            padding: 5px;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .search-container input {
+            flex: 1;
+            border: none;
+            padding: 12px;
+            outline: none;
+            font-size: 16px;
+            border-radius: 8px;
+        }
+        .search-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Категории */
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 20px;
+            margin-top: -30px;
+        }
+        .cat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: 0.3s;
+        }
+        .cat-card:active { transform: scale(0.95); }
+        .cat-icon { font-size: 24px; display: block; margin-bottom: 5px; }
+        .cat-name { font-size: 12px; font-weight: 600; color: #555; }
+
+        /* Задания */
+        .section-title { padding: 20px 20px 10px; font-size: 20px; font-weight: 700; }
+        .task-list { padding: 0 20px 100px; }
+        .task-card {
+            background: white;
+            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #eee;
+            position: relative;
+        }
+        .task-price { color: #2563eb; font-weight: 800; font-size: 18px; display: block; margin-bottom: 5px; }
+        .task-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+        .task-info { font-size: 13px; color: #888; display: flex; justify-content: space-between; }
+
+        /* Нижнее меню (для WebView) */
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            border-top: 1px solid #eee;
+            z-index: 1000;
+        }
+        .nav-item {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+        .nav-item.active { color: #2563eb; }
+        .nav-icon { font-size: 20px; margin-bottom: 2px; }
+
+        /* Адаптивность для ПК */
+        @media (min-width: 768px) {
+            .categories { grid-template-columns: repeat(6, 1fr); max-width: 1000px; margin-left: auto; margin-right: auto; }
+            .task-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1000px; margin: 0 auto; }
+            .hero h1 { font-size: 42px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">USSA<span>.TM</span></div>
+        <button class="btn-main" onclick="handleLogin()">Войти</button>
+    </header>
+
+    <div class="hero">
+        <h1>Найдите мастера для любой задачи</h1>
+        <p>Быстро, надежно и рядом с вами</p>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Например: Сантехник...">
+            <button class="search-btn" onclick="handleSearch()">Найти</button>
+        </div>
+    </div>
+
+    <div class="categories">
+        <div class="cat-card">
+            <span class="cat-icon">🛠️</span>
+            <span class="cat-name">Ремонт</span>
+        </div>
+        <div class="cat-card">
+            <span class="cat-icon">🧹</span>
+            <span class="cat-name">Уборка</span>
+        </div>
+        <div class="cat-card">
+            <span class="cat-icon">💻</span>
+            <span class="cat-name">IT-услуги</span>
+        </div>
+        <div class="cat-card">
+            <span class="cat-icon">🚚</span>
+            <span class="cat-name">Грузы</span>
+        </div>
+        <div class="cat-card">
+            <span class="cat-icon">🎓</span>
+            <span class="cat-name">Уроки</span>
+        </div>
+        <div class="cat-card">
+            <span class="cat-icon">🎨</span>
+            <span class="cat-name">Дизайн</span>
+        </div>
+    </div>
+
+    <h2 class="section-title">Новые заказы</h2>
+
+    <div class="task-list" id="taskContainer">
+        </div>
+
+    <nav class="mobile-nav">
+        <button class="nav-item active">
+            <span class="nav-icon">🏠</span>
+            <span>Главная</span>
+        </button>
+        <button class="nav-item">
+            <span class="nav-icon">🔍</span>
+            <span>Поиск</span>
+        </button>
+        <button class="nav-item" onclick="createTask()">
+            <span class="nav-icon">➕</span>
+            <span>Создать</span>
+        </button>
+        <button class="nav-item">
+            <span class="nav-icon">👤</span>
+            <span>Профиль</span>
+        </button>
+    </nav>
+
+    <script>
+        // Данные для примера (имитация базы данных)
+        const tasks = [
+            { title: "Починить замок в двери", price: "100 TMM", location: "Ашхабад", time: "10 мин. назад" },
+            { title: "Сборка шкафа-купе", price: "250 TMM", location: "Мары", time: "30 мин. назад" },
+            { title: "Установка Windows 11", price: "80 TMM", location: "Туркменабат", time: "1 час назад" },
+            { title: "Нужны грузчики (2 чел)", price: "Договорная", location: "Ашхабад", time: "2 часа назад" }
+        ];
+
+        // Функция отрисовки заданий
+        function renderTasks() {
+            const container = document.getElementById('taskContainer');
+            container.innerHTML = tasks.map(task => `
+                <div class="task-card">
+                    <span class="task-price">${task.price}</span>
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-info">
+                        <span>📍 ${task.location}</span>
+                        <span>${task.time}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Обработка поиска
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value;
+            if(query) {
+                alert('Ищем: ' + query);
+            }
+        }
+
+        function handleLogin() {
+            alert('Переход на страницу входа...');
+        }
+
+        function createTask() {
+            alert('Открытие формы создания заказа...');
+        }
+
+        // Запуск при загрузке
+        window.onload = renderTasks;
+    </script>
+</body>
+</html>
