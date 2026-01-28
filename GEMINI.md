@@ -266,3 +266,6 @@ Always ask:
 "Will this break when the project grows?"
 
 If yes — redesign.
+
+## 16. Language
+ - Всегда отвечай на русском

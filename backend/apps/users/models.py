@@ -27,17 +27,44 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
-class User(AbstractBaseUser, PermissionsMixin):
-    class Role(models.TextChoices):
+class Permission(models.Model):
+    name = models.CharField(max_length=100)
+    codename = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+
+    class Meta:
+        db_table = 'permissions'
+        verbose_name = 'Permission'
+        verbose_name_plural = 'Permissions'
+
+    def __str__(self):
+        return self.name
+
+
+class Role(models.Model):
+    class Type(models.TextChoices):
         CLIENT = 'CLIENT', 'Client'
         FREELANCER = 'FREELANCER', 'Freelancer'
 
+    name = models.CharField(max_length=50, unique=True, choices=Type.choices)
+    description = models.TextField(blank=True)
+    permissions = models.ManyToManyField(Permission, related_name='roles', blank=True)
+
+    class Meta:
+        db_table = 'roles'
+        verbose_name = 'Role'
+        verbose_name_plural = 'Roles'
+
+    def __str__(self):
+        return self.get_name_display()
+
+
+class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, db_index=True)
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
     
-    # Один пользователь может иметь несколько ролей
-    roles = models.JSONField(default=list, blank=True)
+    roles = models.ManyToManyField(Role, related_name='users', blank=True)
     
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -66,15 +93,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         return self.first_name or self.email
 
-    def has_role(self, role):
-        return role in self.roles
+    def has_role(self, role_name):
+        return self.roles.filter(name=role_name).exists()
 
-    def add_role(self, role):
-        if role not in self.roles and role in [r.value for r in self.Role]:
-            self.roles.append(role)
-            self.save(update_fields=['roles'])
+    def has_permission(self, perm_codename):
+        if self.is_superuser:
+            return True
+        return self.roles.filter(permissions__codename=perm_codename).exists()
 
-    def remove_role(self, role):
-        if role in self.roles:
+    def add_role(self, role_name):
+        role, _ = Role.objects.get_or_create(name=role_name)
+        self.roles.add(role)
+
+    def remove_role(self, role_name):
+        role = Role.objects.filter(name=role_name).first()
+        if role:
             self.roles.remove(role)
-            self.save(update_fields=['roles'])
