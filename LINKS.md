@@ -12,6 +12,7 @@
 - **Redoc (Техническая документация)**: [http://127.0.0.1:8000/api/schema/redoc/](http://127.0.0.1:8000/api/schema/redoc/)
 - **Django Admin (Стандартная панель)**: [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)
 
----
-> [!NOTE]
-> Убедитесь, что оба сервера (Backend на порту 8000 и Frontend на порту 3000) запущены.
+### 📄 Руководства по запуску
+- **Инструкция по Localtunnel**: [DEPLOY_GUIDE.md](file:///f:/TmWork/DEPLOY_GUIDE.md)
+- **Инструкция по ngrok (+ .venv)**: [NGROK_GUIDE.md](file:///f:/TmWork/NGROK_GUIDE.md)
+- **Общий гайд по установке**: [README.md](file:///f:/TmWork/README.md)

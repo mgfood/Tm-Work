@@ -4,14 +4,22 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
+
+    // Приоритизируем ссылку из .env, иначе используем локальный адрес
+    const apiTarget = env.VITE_API_URL || 'http://127.0.0.1:8000';
+
     return {
         plugins: [react()],
         server: {
             port: 3000,
             proxy: {
                 '/api': {
-                    target: env.VITE_API_URL || 'http://127.0.0.1:8000',
+                    target: apiTarget,
                     changeOrigin: true,
+                    // Добавляем обработку ошибок, чтобы прокси не "падал" при неверной ссылке
+                    onError: (err) => {
+                        console.error('Proxy Error:', err);
+                    }
                 },
             },
         },
