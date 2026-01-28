@@ -1,0 +1,59 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Home from './pages/Home';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import Dashboard from './pages/Dashboard';
+
+// Job Pages
+import JobListPage from './pages/jobs/JobListPage';
+import JobDetailPage from './pages/jobs/JobDetailPage';
+import CreateJobPage from './pages/jobs/CreateJobPage';
+
+// Profile Pages
+import TalentListPage from './pages/profiles/TalentListPage';
+import MyProfilePage from './pages/profiles/MyProfilePage';
+import TalentProfilePage from './pages/profiles/TalentProfilePage';
+
+// Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+
+function App() {
+    return (
+        <AuthProvider>
+            <Router>
+                <div className="min-h-screen bg-slate-50 flex flex-col">
+                    <Navbar />
+
+                    <main className="flex-grow flex flex-col">
+                        <Routes>
+                            <Route path="/" element={<Home />} />
+                            <Route path="/login" element={<LoginPage />} />
+                            <Route path="/register" element={<RegisterPage />} />
+                            <Route path="/dashboard" element={<Dashboard />} />
+
+                            {/* Admin Routes */}
+                            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+
+                            {/* Job Routes */}
+                            <Route path="/jobs" element={<JobListPage />} />
+                            <Route path="/jobs/create" element={<CreateJobPage />} />
+                            <Route path="/jobs/:id" element={<JobDetailPage />} />
+
+                            {/* Profile Routes */}
+                            <Route path="/talents" element={<TalentListPage />} />
+                            <Route path="/profile" element={<MyProfilePage />} />
+                            <Route path="/talents/:id" element={<TalentProfilePage />} />
+                        </Routes>
+                    </main>
+
+                    <Footer />
+                </div>
+            </Router>
+        </AuthProvider>
+    );
+}
+
+export default App;
