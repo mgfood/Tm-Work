@@ -16,9 +16,15 @@ export default defineConfig(({ mode }) => {
                 '/api': {
                     target: apiTarget,
                     changeOrigin: true,
-                    // Добавляем обработку ошибок, чтобы прокси не "падал" при неверной ссылке
                     onError: (err) => {
                         console.error('Proxy Error:', err);
+                    }
+                },
+                '/media': {
+                    target: apiTarget,
+                    changeOrigin: true,
+                    onError: (err) => {
+                        console.error('Proxy Media Error:', err);
                     }
                 },
             },

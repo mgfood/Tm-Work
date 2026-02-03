@@ -19,6 +19,16 @@ const proposalsService = {
     acceptProposal: async (id) => {
         const response = await apiClient.post(`/proposals/${id}/accept/`);
         return response.data;
+    },
+
+    rejectProposal: async (id) => {
+        const response = await apiClient.post(`/proposals/${id}/reject/`);
+        return response.data;
+    },
+
+    cancelProposal: async (id) => {
+        const response = await apiClient.post(`/proposals/${id}/cancel/`);
+        return response.data;
     }
 };
 

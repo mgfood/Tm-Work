@@ -8,4 +8,5 @@ urlpatterns = [
     path('proposals/', include('apps.proposals.urls')),
     path('escrow/', include('apps.escrow.urls')),
     path('transactions/', include('apps.transactions.urls')),
+    path('chat/', include('apps.chat.urls')),
 ]

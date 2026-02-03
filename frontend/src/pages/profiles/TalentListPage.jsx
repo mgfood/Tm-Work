@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Star, User, BookOpen } from 'lucide-react';
+import { Search, MapPin, Star, User, BookOpen, ShieldCheck, Briefcase } from 'lucide-react';
 import profilesService from '../../api/profilesService';
 import { Link } from 'react-router-dom';
 
@@ -62,20 +62,34 @@ const TalentListPage = () => {
                 ) : (
                     filteredTalents.map(talent => (
                         <div key={talent.user.id} className="premium-card p-8 flex flex-col items-center text-center group">
-                            <div className="relative mb-6">
-                                <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
+                            <Link to={`/talents/${talent.user.id}`} className="relative mb-6 block">
+                                <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-lg group-hover:border-primary-500 transition-colors">
                                     {talent.avatar ? (
-                                        <img src={talent.avatar} alt={talent.user.first_name} className="w-full h-full object-cover" />
+                                        <img
+                                            src={talent.avatar.startsWith('http') ? talent.avatar : (talent.avatar.startsWith('/') ? talent.avatar : `/${talent.avatar}`)}
+                                            alt={talent.user.first_name}
+                                            className="w-full h-full object-cover"
+                                        />
                                     ) : (
                                         <User size={40} className="text-slate-400" />
                                     )}
                                 </div>
                                 <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 border-4 border-white rounded-full"></div>
-                            </div>
+                            </Link>
 
-                            <h3 className="text-2xl font-bold text-slate-900 mb-1 group-hover:text-primary-600 transition-colors">
-                                {talent.user.first_name} {talent.user.last_name}
-                            </h3>
+                            <Link to={`/talents/${talent.user.id}`} className="block group">
+                                <h3 className="text-2xl font-bold text-slate-900 mb-1 group-hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
+                                    {talent.user.first_name} {talent.user.last_name}
+                                    {talent.is_verified && (
+                                        <ShieldCheck size={20} className="text-green-600" title="Проверенный специалист" />
+                                    )}
+                                </h3>
+                            </Link>
+
+                            <div className="flex items-center gap-1.5 p-2 bg-blue-50 text-blue-600 rounded-xl mb-4">
+                                <Briefcase size={16} />
+                                <span className="text-xs font-bold leading-none">{talent.completed_works_count || 0} Работ</span>
+                            </div>
 
                             <div className="flex items-center gap-2 text-slate-500 text-sm mb-4">
                                 <MapPin size={14} className="text-primary-400" />

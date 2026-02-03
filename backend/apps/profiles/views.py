@@ -1,19 +1,30 @@
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Profile, Skill
-from .serializers import ProfileSerializer, PublicProfileSerializer, SkillSerializer
+from .models import Profile, Skill, PortfolioItem
+from .serializers import (
+    ProfileSerializer, 
+    PublicProfileSerializer, 
+    SkillSerializer,
+    PortfolioItemSerializer
+)
+from apps.users.permissions import IsProfileOwner
 
 
-class SkillViewSet(viewsets.ReadOnlyModelViewSet):
+class SkillViewSet(viewsets.ModelViewSet):
     """
-    Skill list and retrieval (read-only)
+    Skill list and management
     
-    GET /api/v1/profiles/skills/
+    GET /api/v1/profiles/skills/ (Public)
+    POST/PUT/DELETE /api/v1/profiles/skills/ (Admin only)
     """
     queryset = Skill.objects.all()
     serializer_class = SkillSerializer
-    permission_classes = [permissions.AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
@@ -25,7 +36,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
     GET /api/v1/profiles/{user_id}/ - get public profile
     """
     queryset = Profile.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     lookup_field = 'user_id'
 
     def get_serializer_class(self):
@@ -45,6 +56,16 @@ class ProfileViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='delete-avatar')
+    def delete_avatar(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        if profile.avatar:
+            profile.avatar.delete()
+            # Django's FileField.delete() clears the attribute, but we want to be sure it's saved as None
+            profile.avatar = None
+            profile.save(update_fields=['avatar'])
+        return Response({'status': 'avatar deleted'})
 
     def retrieve(self, request, *args, **kwargs):
         # Allow viewing any public profile
@@ -67,3 +88,27 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
         serializer = PublicProfileSerializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class PortfolioItemViewSet(viewsets.ModelViewSet):
+    """
+    CRUD for portfolio items
+    """
+    queryset = PortfolioItem.objects.all()
+    serializer_class = PortfolioItemSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated(), IsProfileOwner()]
+        return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        serializer.save(profile=profile)
+
+    def get_queryset(self):
+        # Filtering by profile if user_id is provided in query params
+        user_id = self.request.query_params.get('user_id')
+        if user_id:
+            return self.queryset.filter(profile__user_id=user_id)
+        return self.queryset

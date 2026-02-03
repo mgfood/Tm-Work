@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'apps.proposals',
     'apps.escrow',
     'apps.transactions',
+    'apps.chat',
     'drf_spectacular',
 ]
 

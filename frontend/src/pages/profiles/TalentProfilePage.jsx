@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-    User, MapPin, Star, Mail, Briefcase,
-    ArrowLeft, MessageSquare, ShieldCheck
+    User, MapPin, Star, Mail, Briefcase, Clock,
+    ArrowLeft, MessageSquare, ShieldCheck,
+    Send, Instagram, Github, Linkedin, Eye as View,
+    Image as ImageIcon, Link as LinkIcon, ExternalLink
 } from 'lucide-react';
 import profilesService from '../../api/profilesService';
+import chatService from '../../api/chatService';
+import { useAuth } from '../../context/AuthContext';
 
 const TalentProfilePage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [profile, setProfile] = useState(null);
+    const [portfolioItems, setPortfolioItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
-                const data = await profilesService.getProfileByUserId(id);
-                setProfile(data);
+                const [profileData, portfolioData] = await Promise.all([
+                    profilesService.getProfileByUserId(id),
+                    profilesService.getPortfolioItems(id)
+                ]);
+                setProfile(profileData);
+                setPortfolioItems(portfolioData.results || portfolioData);
             } catch (err) {
                 setError('Профиль не найден');
                 console.error(err);
@@ -26,7 +36,7 @@ const TalentProfilePage = () => {
                 setLoading(false);
             }
         };
-        fetchProfile();
+        fetchData();
     }, [id]);
 
     if (loading) return (
@@ -59,7 +69,11 @@ const TalentProfilePage = () => {
                     <div className="text-center mb-8">
                         <div className="w-32 h-32 bg-slate-100 rounded-3xl mx-auto mb-6 flex items-center justify-center overflow-hidden shadow-xl border-4 border-white rotate-3 group hover:rotate-0 transition-transform duration-500">
                             {profile.avatar ? (
-                                <img src={profile.avatar} alt={profile.user.first_name} className="w-full h-full object-cover" />
+                                <img
+                                    src={profile.avatar.startsWith('http') ? profile.avatar : (profile.avatar.startsWith('/') ? profile.avatar : `/${profile.avatar}`)}
+                                    alt={profile.user.first_name}
+                                    className="w-full h-full object-cover"
+                                />
                             ) : (
                                 <User size={64} className="text-slate-300" />
                             )}
@@ -79,12 +93,34 @@ const TalentProfilePage = () => {
                         </div>
 
                         <div className="space-y-3">
-                            <button className="w-full btn-primary py-4 flex items-center justify-center gap-2">
-                                <MessageSquare size={20} /> Написать сообщение
-                            </button>
-                            <div className="flex items-center justify-center gap-2 text-xs text-green-600 font-bold uppercase tracking-widest pt-4">
-                                <ShieldCheck size={16} /> Проверенный специалист
-                            </div>
+                            {user?.id !== profile.user.id ? (
+                                <button
+                                    onClick={async () => {
+                                        if (!user) {
+                                            navigate('/login');
+                                            return;
+                                        }
+                                        try {
+                                            const thread = await chatService.getOrCreateThread(profile.user.id, 'PERSONAL');
+                                            navigate('/chat');
+                                        } catch (e) {
+                                            alert(e.response?.data?.error || 'Ошибка при создании чата');
+                                        }
+                                    }}
+                                    className="w-full btn-primary py-4 flex items-center justify-center gap-2"
+                                >
+                                    <MessageSquare size={20} /> Написать сообщение
+                                </button>
+                            ) : (
+                                <div className="p-4 bg-slate-50 text-slate-500 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 border border-slate-100">
+                                    <View size={16} /> Это ваш профиль
+                                </div>
+                            )}
+                            {profile.is_verified && (
+                                <div className="flex items-center justify-center gap-2 text-xs text-green-600 font-bold uppercase tracking-widest pt-4">
+                                    <ShieldCheck size={16} /> Проверенный специалист
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -119,23 +155,117 @@ const TalentProfilePage = () => {
                         </div>
                     </section>
 
-                    {/* Stats/Experience Summary */}
-                    <section className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-12">
+                    {/* Portfolio Section */}
+                    {portfolioItems.length > 0 && (
+                        <section>
+                            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
+                                <div className="w-8 h-px bg-slate-200"></div> Портфолио ({portfolioItems.length})
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                {portfolioItems.map(item => (
+                                    <div key={item.id} className="premium-card overflow-hidden group hover:shadow-2xl hover:shadow-primary-500/10 transition-all duration-500">
+                                        <div className="aspect-video relative overflow-hidden bg-slate-100">
+                                            <img
+                                                src={item.image}
+                                                alt={item.title}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
+                                            {item.url && (
+                                                <div className="absolute inset-0 bg-primary-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <a
+                                                        href={item.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-4 bg-white text-primary-600 rounded-full shadow-2xl hover:scale-110 transition-transform"
+                                                        title="Посмотреть проект"
+                                                    >
+                                                        <ExternalLink size={24} />
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="p-6">
+                                            <h4 className="text-lg font-bold text-slate-900 mb-2 truncate group-hover:text-primary-600 transition-colors">
+                                                {item.title}
+                                            </h4>
+                                            <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+                                                {item.description}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Stats & Details Section */}
+                    <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="premium-card p-8 border-l-4 border-l-primary-600">
                             <div className="flex items-center gap-4 text-slate-400 mb-4">
                                 <Briefcase size={20} />
-                                <span className="text-xs font-bold uppercase tracking-widest">Проектов выполнено</span>
+                                <span className="text-xs font-bold uppercase tracking-widest">Работ выполнено</span>
                             </div>
-                            <div className="text-3xl font-black text-slate-900">12</div>
+                            <div className="text-3xl font-black text-slate-900">{profile.completed_works_count || 0}</div>
                         </div>
                         <div className="premium-card p-8 border-l-4 border-l-green-600">
                             <div className="flex items-center gap-4 text-slate-400 mb-4">
                                 <Clock size={20} />
                                 <span className="text-xs font-bold uppercase tracking-widest">На платформе</span>
                             </div>
-                            <div className="text-3xl font-black text-slate-900">с 2026г.</div>
+                            <div className="text-3xl font-black text-slate-900">
+                                с {new Date(profile.user.date_joined).getFullYear()}г.
+                            </div>
                         </div>
+                        {profile.hourly_rate && (
+                            <div className="premium-card p-8 border-l-4 border-l-orange-600">
+                                <div className="flex items-center gap-4 text-slate-400 mb-4">
+                                    <Star size={20} />
+                                    <span className="text-xs font-bold uppercase tracking-widest">Ставка</span>
+                                </div>
+                                <div className="text-3xl font-black text-slate-900">{profile.hourly_rate} TMT/ч</div>
+                            </div>
+                        )}
+                        {profile.experience_years > 0 && (
+                            <div className="premium-card p-8 border-l-4 border-l-blue-600">
+                                <div className="flex items-center gap-4 text-slate-400 mb-4">
+                                    <View size={20} />
+                                    <span className="text-xs font-bold uppercase tracking-widest">Опыт</span>
+                                </div>
+                                <div className="text-3xl font-black text-slate-900">{profile.experience_years} лет</div>
+                            </div>
+                        )}
                     </section>
+
+                    {/* Social Links Section */}
+                    {profile.social_links && Object.values(profile.social_links).some(v => v) && (
+                        <section>
+                            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                                <div className="w-8 h-px bg-slate-200"></div> Социальные сети
+                            </h2>
+                            <div className="flex flex-wrap gap-4">
+                                {profile.social_links.telegram && (
+                                    <a href={`https://t.me/${profile.social_links.telegram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-all font-bold text-sm border border-slate-100">
+                                        <Send size={18} /> Telegram
+                                    </a>
+                                )}
+                                {profile.social_links.instagram && (
+                                    <a href={`https://instagram.com/${profile.social_links.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl hover:bg-pink-50 text-slate-600 hover:text-pink-600 transition-all font-bold text-sm border border-slate-100">
+                                        <Instagram size={18} /> Instagram
+                                    </a>
+                                )}
+                                {profile.social_links.github && (
+                                    <a href={`https://github.com/${profile.social_links.github}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl hover:bg-slate-900 hover:text-white transition-all font-bold text-sm border border-slate-100">
+                                        <Github size={18} /> GitHub
+                                    </a>
+                                )}
+                                {profile.social_links.linkedin && (
+                                    <a href={`https://linkedin.com/in/${profile.social_links.linkedin}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl hover:bg-blue-700 hover:text-white transition-all font-bold text-sm border border-slate-100">
+                                        <Linkedin size={18} /> LinkedIn
+                                    </a>
+                                )}
+                            </div>
+                        </section>
+                    )}
                 </div>
             </div>
         </div>

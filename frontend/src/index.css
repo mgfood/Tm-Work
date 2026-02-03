@@ -26,3 +26,15 @@ body {
 .btn-secondary {
   @apply px-6 py-3 bg-white text-slate-700 border border-slate-200 rounded-xl font-medium transition-all hover:bg-slate-50 active:scale-95;
 }
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  }
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Briefcase, Clock, DollarSign, MapPin } from 'lucide-react';
+import { Search, Filter, Briefcase, Clock, DollarSign, MapPin, List } from 'lucide-react';
 import jobsService from '../../api/jobsService';
 
 const JobListPage = () => {
@@ -8,13 +8,25 @@ const JobListPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [categories, setCategories] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+
+    useEffect(() => {
+        // Fetch categories
+        jobsService.getCategories().then(data => {
+            setCategories(data.results || data);
+        }).catch(console.error);
+    }, []);
 
     useEffect(() => {
         const fetchJobs = async () => {
             try {
                 setLoading(true);
                 // Only fetch published jobs for the public list
-                const data = await jobsService.getJobs({ status: 'PUBLISHED' });
+                const data = await jobsService.getJobs({
+                    status: 'PUBLISHED',
+                    category: selectedCategory
+                });
                 setJobs(data.results || data);
             } catch (err) {
                 setError('Не удалось загрузить список заказов. Попробуйте позже.');
@@ -24,7 +36,7 @@ const JobListPage = () => {
             }
         };
         fetchJobs();
-    }, []);
+    }, [selectedCategory]);
 
     const filteredJobs = jobs.filter(job =>
         job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,7 +48,7 @@ const JobListPage = () => {
             <div className="flex flex-col md:row justify-between items-start md:items-center gap-6 mb-12">
                 <div>
                     <h1 className="text-4xl font-bold text-slate-900 mb-2">Поиск работы</h1>
-                    <p className="text-slate-500">Найдите идеальный проект для ваших навыков</p>
+                    <p className="text-slate-500">Найдите идеальный заказ для ваших навыков</p>
                 </div>
                 <Link to="/jobs/create" className="btn-primary">
                     Разместить заказ
@@ -66,14 +78,26 @@ const JobListPage = () => {
                                 </div>
                             </div>
                             <hr className="border-slate-100" />
-                            <div>
-                                <label className="text-sm font-semibold text-slate-700 block mb-2">Бюджет</label>
-                                <select className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                                    <option>Любой</option>
-                                    <option>До 500 TMT</option>
-                                    <option>500 - 2000 TMT</option>
-                                    <option>2000+ TMT</option>
-                                </select>
+                        </div>
+                        <hr className="border-slate-100" />
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700 block mb-2">Категории</label>
+                            <div className="space-y-1">
+                                <button
+                                    onClick={() => setSelectedCategory(null)}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${!selectedCategory ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                >
+                                    Все категории
+                                </button>
+                                {categories.map(cat => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setSelectedCategory(cat.id)}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCategory === cat.id ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                    >
+                                        {cat.name}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -111,7 +135,7 @@ const JobListPage = () => {
                                 <div className="flex-grow">
                                     <div className="flex items-center gap-3 mb-3">
                                         <span className="px-3 py-1 bg-primary-50 text-primary-600 text-xs font-bold rounded-full uppercase tracking-wider">
-                                            {job.category || 'Общее'}
+                                            {job.category?.name || 'Общее'}
                                         </span>
                                         <span className="text-slate-400 text-sm flex items-center gap-1">
                                             <Clock size={14} />
@@ -142,8 +166,8 @@ const JobListPage = () => {
                         ))
                     )}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

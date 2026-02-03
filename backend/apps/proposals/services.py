@@ -23,8 +23,8 @@ class ProposalService:
             raise ValidationError("Proposals can only be accepted for published jobs.")
 
         # 3. Принятие отклика
-        proposal.is_accepted = True
-        proposal.save(update_fields=['is_accepted', 'updated_at'])
+        proposal.status = Proposal.Status.ACCEPTED
+        proposal.save(update_fields=['status', 'updated_at'])
 
         # 4. Назначение исполнителя и смена статуса заказа
         job.freelancer = proposal.freelancer
@@ -33,9 +33,39 @@ class ProposalService:
         # Используем JobService для корректного перехода статуса
         JobService.change_status(job, Job.Status.IN_PROGRESS, user)
 
-        # 5. Отклонение всех остальных откликов (опционально/может быть полезно для уведомлений)
-        job.proposals.exclude(id=proposal.id).update(is_accepted=False)
+        # 5. Отклонение всех остальных откликов
+        job.proposals.exclude(id=proposal.id).update(status=Proposal.Status.REJECTED)
 
+        return proposal
+
+    @staticmethod
+    def reject_proposal(proposal: Proposal, user):
+        """
+        Отклонение отклика заказчиком.
+        """
+        if user != proposal.job.client:
+            raise ValidationError("Only the job owner can reject proposals.")
+        
+        if proposal.status != Proposal.Status.PENDING:
+            raise ValidationError("Only pending proposals can be rejected.")
+            
+        proposal.status = Proposal.Status.REJECTED
+        proposal.save(update_fields=['status', 'updated_at'])
+        return proposal
+
+    @staticmethod
+    def cancel_proposal(proposal: Proposal, user):
+        """
+        Отмена отклика самим фрилансером.
+        """
+        if user != proposal.freelancer:
+            raise ValidationError("Only the freelancer who submitted the proposal can cancel it.")
+            
+        if proposal.status == Proposal.Status.ACCEPTED:
+            raise ValidationError("Cannot cancel a proposal that has already been accepted.")
+            
+        proposal.status = Proposal.Status.CANCELLED
+        proposal.save(update_fields=['status', 'updated_at'])
         return proposal
 
     @staticmethod

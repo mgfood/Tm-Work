@@ -4,6 +4,20 @@ from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
 
 
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True)
+    icon = models.CharField(max_length=50, blank=True, help_text="Lucide icon name")
+
+    class Meta:
+        db_table = 'categories'
+        verbose_name = _('Category')
+        verbose_name_plural = _('Categories')
+    
+    def __str__(self):
+        return self.name
+
+
 class Job(models.Model):
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', _('Draft')
@@ -23,6 +37,13 @@ class Job(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         related_name='freelancer_jobs',
+        null=True,
+        blank=True
+    )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        related_name='jobs',
         null=True,
         blank=True
     )

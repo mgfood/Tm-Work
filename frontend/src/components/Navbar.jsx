@@ -1,5 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom';
-import { Menu, X, User as UserIcon, LogOut, LayoutDashboard, Search, Users } from 'lucide-react';
+import { Menu, X, User as UserIcon, LogOut, LayoutDashboard, Search, Users, ShieldAlert, Mail, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,22 +26,32 @@ const Navbar = () => {
                     <Link to="/" className="hover:text-primary-600 transition-colors flex items-center gap-1.5">Главная</Link>
                     <Link to="/jobs" className="hover:text-primary-600 transition-colors flex items-center gap-1.5"><Search size={16} /> Найти работу</Link>
                     <Link to="/talents" className="hover:text-primary-600 transition-colors flex items-center gap-1.5"><Users size={16} /> Поиск талантов</Link>
+                    <Link to="/chat" className="hover:text-primary-600 transition-colors flex items-center gap-1.5"><MessageSquare size={16} /> Сообщения</Link>
+                    <Link to="/contact" className="hover:text-primary-600 transition-colors flex items-center gap-1.5">Контакты</Link>
 
                     <div className="flex gap-3 ml-4 border-l pl-8 border-slate-100">
                         {loading ? (
                             <div className="w-8 h-8 rounded-full bg-slate-50 animate-pulse"></div>
                         ) : user ? (
                             <div className="flex items-center gap-4">
+                                {user.is_staff && (
+                                    <Link to="/admin-dashboard" className="text-slate-400 hover:text-primary-600 transition-colors" title="Админ-панель">
+                                        <ShieldAlert size={20} />
+                                    </Link>
+                                )}
                                 <Link to="/dashboard" className="text-slate-400 hover:text-primary-600 transition-colors" title="Дашборд">
                                     <LayoutDashboard size={20} />
                                 </Link>
-                                <Link to="/profile" className="flex items-center gap-2 text-slate-700 hover:text-primary-600 transition-colors">
-                                    <div className="w-8 h-8 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center">
-                                        <UserIcon size={18} />
-                                    </div>
-                                    <span>{user.first_name || 'Профиль'}</span>
+                                <Link to="/jobs/create" className="btn-primary text-xs py-2 px-4 whitespace-nowrap">
+                                    Создать заказ
                                 </Link>
-                                <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 transition-colors tooltip" title="Выйти">
+                                <Link to="/profile" className="flex items-center gap-2 text-slate-700 hover:text-primary-600 transition-colors shrink-0">
+                                    <div className="w-8 h-8 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center font-bold">
+                                        {user.first_name?.[0] || user.email[0].toUpperCase()}
+                                    </div>
+                                    <span className="hidden lg:inline">{user.first_name || 'Профиль'}</span>
+                                </Link>
+                                <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 transition-colors" title="Выйти">
                                     <LogOut size={20} />
                                 </button>
                             </div>
@@ -66,6 +76,8 @@ const Navbar = () => {
                     <Link to="/" onClick={() => setIsOpen(false)} className="py-2 font-medium">Главная</Link>
                     <Link to="/jobs" onClick={() => setIsOpen(false)} className="py-2 font-medium flex items-center gap-2"><Search size={18} /> Найти работу</Link>
                     <Link to="/talents" onClick={() => setIsOpen(false)} className="py-2 font-medium flex items-center gap-2"><Users size={18} /> Поиск талантов</Link>
+                    <Link to="/chat" onClick={() => setIsOpen(false)} className="py-2 font-medium flex items-center gap-2"><MessageSquare size={18} /> Сообщения</Link>
+                    <Link to="/contact" onClick={() => setIsOpen(false)} className="py-2 font-medium flex items-center gap-2"><Mail size={18} /> Контакты</Link>
                     <hr className="border-slate-100" />
                     {user ? (
                         <div className="flex flex-col gap-4">

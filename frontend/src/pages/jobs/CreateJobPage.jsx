@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FilePlus, Calendar, DollarSign, AlignLeft, AlertCircle, Save, Send } from 'lucide-react';
+import { FilePlus, Calendar, DollarSign, AlignLeft, AlertCircle, Save, Send, List } from 'lucide-react';
 import jobsService from '../../api/jobsService';
 
 const CreateJobPage = () => {
@@ -10,10 +10,19 @@ const CreateJobPage = () => {
 
     const [formData, setFormData] = useState({
         title: '',
+        category_id: '',
         description: '',
         budget: '',
         deadline: '',
     });
+
+    const [categories, setCategories] = useState([]);
+
+    React.useEffect(() => {
+        jobsService.getCategories().then(data => {
+            setCategories(data.results || data);
+        }).catch(err => console.error(err));
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -26,19 +35,40 @@ const CreateJobPage = () => {
         setIsSubmitting(true);
 
         try {
+            // Validate budget
+            if (!formData.budget || formData.budget <= 0) {
+                setError('Бюджет должен быть положительным числом');
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Create job (always starts as DRAFT in backend due to read_only status)
             const job = await jobsService.createJob({
                 ...formData,
-                status: shouldPublish ? 'PUBLISHED' : 'DRAFT'
+                budget: parseFloat(formData.budget)
             });
 
             if (shouldPublish) {
-                await jobsService.publishJob(job.id);
+                try {
+                    await jobsService.publishJob(job.id);
+                } catch (publishErr) {
+                    console.error('Publishing failed', publishErr);
+                    setError('Заказ создан как черновик, но не был опубликован. Вы можете опубликовать его позже в панели управления.');
+                    // Don't throw, just navigate to the job page
+                }
             }
 
-            navigate(`/jobs/${job.id}`);
+            navigate(`/jobs/${job.id}`, { state: { message: shouldPublish ? 'Заказ успешно опубликован!' : 'Заказ сохранен как черновик' } });
         } catch (err) {
             console.error(err);
-            setError('Не удалось создать заказ. Проверьте правильность заполнения полей.');
+            const serverError = err.response?.data;
+            if (serverError) {
+                // Handle DRF validation errors
+                const msg = Object.entries(serverError).map(([key, value]) => `${key}: ${value}`).join(', ');
+                setError(`Ошибка: ${msg}`);
+            } else {
+                setError('Не удалось создать заказ. Проверьте правильность заполнения полей.');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -75,6 +105,25 @@ const CreateJobPage = () => {
                             <FilePlus className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                         </div>
                         <p className="text-xs text-slate-400 mt-2">Кратко и емко опишите суть проекта</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">Категория</label>
+                        <div className="relative">
+                            <select
+                                name="category_id"
+                                required
+                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none appearance-none font-medium text-slate-700"
+                                value={formData.category_id}
+                                onChange={handleChange}
+                            >
+                                <option value="">Выберите категорию</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                            </select>
+                            <List className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                        </div>
                     </div>
 
                     <div>

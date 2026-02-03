@@ -6,11 +6,13 @@ import Home from './pages/Home';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
+import ContactPage from './pages/ContactPage';
 
 // Job Pages
 import JobListPage from './pages/jobs/JobListPage';
 import JobDetailPage from './pages/jobs/JobDetailPage';
 import CreateJobPage from './pages/jobs/CreateJobPage';
+import EditJobPage from './pages/jobs/EditJobPage';
 
 // Profile Pages
 import TalentListPage from './pages/profiles/TalentListPage';
@@ -19,6 +21,9 @@ import TalentProfilePage from './pages/profiles/TalentProfilePage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
+
+// Chat Pages
+import ChatPage from './pages/chat/ChatPage';
 
 function App() {
     return (
@@ -36,16 +41,21 @@ function App() {
 
                             {/* Admin Routes */}
                             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                            <Route path="/contact" element={<ContactPage />} />
 
                             {/* Job Routes */}
                             <Route path="/jobs" element={<JobListPage />} />
                             <Route path="/jobs/create" element={<CreateJobPage />} />
+                            <Route path="/jobs/:id/edit" element={<EditJobPage />} />
                             <Route path="/jobs/:id" element={<JobDetailPage />} />
 
                             {/* Profile Routes */}
                             <Route path="/talents" element={<TalentListPage />} />
                             <Route path="/profile" element={<MyProfilePage />} />
                             <Route path="/talents/:id" element={<TalentProfilePage />} />
+
+                            {/* Chat Route */}
+                            <Route path="/chat" element={<ChatPage />} />
                         </Routes>
                     </main>
 

@@ -27,3 +27,15 @@ class IsFreelancerAssigned(permissions.BasePermission):
     """
     def has_object_permission(self, request, view, obj):
         return obj.freelancer == request.user
+
+
+class IsProfileOwner(permissions.BasePermission):
+    """
+    Разрешение только для владельца профиля.
+    """
+    def has_object_permission(self, request, view, obj):
+        if hasattr(obj, 'user'):
+            return obj.user == request.user
+        if hasattr(obj, 'profile'):
+            return obj.profile.user == request.user
+        return False

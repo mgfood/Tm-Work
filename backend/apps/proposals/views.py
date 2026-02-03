@@ -28,10 +28,31 @@ class ProposalViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['post'], url_path='reject')
+    def reject(self, request, pk=None):
+        proposal = self.get_object()
+        try:
+            ProposalService.reject_proposal(proposal, request.user)
+            return Response({'status': 'proposal rejected'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel(self, request, pk=None):
+        proposal = self.get_object()
+        try:
+            ProposalService.cancel_proposal(proposal, request.user)
+            return Response({'status': 'proposal cancelled'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     def get_queryset(self):
-        # Ограничиваем видимость: фрилансер видит свои отклики,
-        # Заказчик видит все отклики на свои заказы.
+        # Ограничиваем видимость:
+        # 1. Фрилансер видит свои отклики.
+        # 2. Заказчик видит все отклики на свои заказы.
+        # Теперь возвращаем объедененный набор.
         user = self.request.user
-        if user.has_role('CLIENT'):
-            return Proposal.objects.filter(job__client=user)
-        return Proposal.objects.filter(freelancer=user)
+        from django.db.models import Q
+        return Proposal.objects.filter(
+            Q(freelancer=user) | Q(job__client=user)
+        ).distinct()

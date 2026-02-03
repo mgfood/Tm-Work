@@ -1,15 +1,76 @@
 from rest_framework import viewsets, permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Job
-from .serializers import JobSerializer
+from .models import Job, JobFile, Category
+from .serializers import JobSerializer, JobFileSerializer, CategorySerializer
 from .services import JobService
 from apps.users.permissions import IsClient, IsJobOwner
+from django.db import models # Added this import for models.Q
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]
+
 
 class JobViewSet(viewsets.ModelViewSet):
-    queryset = Job.objects.all()
     serializer_class = JobSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        """
+        Job visibility logic:
+        1. Drafts are ONLY visible to their creators (and staff).
+        2. In 'list' action, drafts are hidden unless filtering by client (profile view).
+        """
+        user = self.request.user
+        queryset = Job.objects.all()
+
+        # Filtering by params
+        status_param = self.request.query_params.get('status')
+        client_param = self.request.query_params.get('client')
+        category_param = self.request.query_params.get('category')
+
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        if client_param:
+            queryset = queryset.filter(client_id=client_param)
+        if category_param:
+            queryset = queryset.filter(category_id=category_param)
+
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        if client_param:
+            queryset = queryset.filter(client_id=client_param)
+
+        if user.is_staff:
+            return queryset
+
+        # Visibility restrictions
+        public_statuses = [Job.Status.PUBLISHED, Job.Status.IN_PROGRESS, Job.Status.COMPLETED]
+        
+        if self.action == 'list':
+            # Hide drafts from public list even for owner
+            # Use 'client' param as a proxy for "I am viewing my own jobs"
+            if not client_param:
+                return queryset.filter(status__in=public_statuses)
+            
+            # If client_param is set, allow owner to see their drafts
+            return queryset.filter(
+                models.Q(status__in=public_statuses) |
+                models.Q(client=user, status=Job.Status.DRAFT)
+            )
+
+        # Retrieve/Update/Delete
+        return queryset.filter(
+            models.Q(status__in=public_statuses) |
+            models.Q(client=user)
+        )
 
     def get_permissions(self):
         if self.action in ['create']:
@@ -20,6 +81,11 @@ class JobViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(client=self.request.user)
+
+    def perform_destroy(self, instance):
+        if instance.status not in [Job.Status.DRAFT, Job.Status.PUBLISHED, Job.Status.CANCELLED]:
+            raise ValidationError("Cannot delete a job that is in progress or completed.")
+        instance.delete()
 
     @action(detail=True, methods=['post'], url_path='publish')
     def publish(self, request, pk=None):
@@ -38,3 +104,34 @@ class JobViewSet(viewsets.ModelViewSet):
             return Response({'status': 'job cancelled'})
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='upload-file')
+    def upload_file(self, request, pk=None):
+        job = self.get_object()
+        if job.client != request.user and not request.user.is_staff:
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        job_file = JobFile.objects.create(
+            job=job,
+            file=file,
+            uploaded_by=request.user
+        )
+        serializer = JobFileSerializer(job_file)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['delete'], url_path='delete-file/(?P<file_id>[^/.]+)')
+    def delete_file(self, request, pk=None, file_id=None):
+        job = self.get_object()
+        if job.client != request.user and not request.user.is_staff:
+             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            job_file = JobFile.objects.get(id=file_id, job=job)
+            job_file.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except JobFile.DoesNotExist:
+            return Response({'error': 'File not found'}, status=status.HTTP_404_NOT_FOUND)

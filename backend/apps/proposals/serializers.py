@@ -4,15 +4,17 @@ from apps.jobs.models import Job
 
 class ProposalSerializer(serializers.ModelSerializer):
     freelancer_email = serializers.EmailField(source='freelancer.email', read_only=True)
+    job_title = serializers.CharField(source='job.title', read_only=True)
+    job_budget = serializers.DecimalField(source='job.budget', max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = Proposal
         fields = [
-            'id', 'job', 'freelancer', 'freelancer_email', 
-            'message', 'price', 'deadline_days', 'is_accepted', 
+            'id', 'job', 'job_title', 'job_budget', 'freelancer', 'freelancer_email', 
+            'message', 'price', 'deadline_days', 'status', 
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['freelancer', 'is_accepted', 'created_at', 'updated_at']
+        read_only_fields = ['freelancer', 'status', 'created_at', 'updated_at']
 
     def validate(self, data):
         # Проверка на существование отклика от того же фрилансера будет на уровне БД (unique_together),

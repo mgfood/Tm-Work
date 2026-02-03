@@ -44,6 +44,13 @@ class JobService:
         if new_status == Job.Status.COMPLETED:
             if user != job.client:
                 raise ValidationError("Only the client can confirm completion.")
+            
+            # Increment freelancer's completed works count
+            if job.freelancer:
+                from apps.profiles.models import Profile
+                profile, _ = Profile.objects.get_or_create(user=job.freelancer)
+                profile.completed_works_count += 1
+                profile.save(update_fields=['completed_works_count'])
 
         # Сохранение
         job.status = new_status

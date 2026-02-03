@@ -3,16 +3,7 @@ import apiClient from './client';
 const adminService = {
     // Stats
     getStats: async () => {
-        // This could be a new endpoint, or we can mock it from existing data for now
-        // For a real app, we'd have /api/v1/admin/stats/
-        const response = await apiClient.get('/admin/stats/').catch(() => ({
-            data: {
-                total_users: 156,
-                active_jobs: 42,
-                total_escrow: '12,450 TMT',
-                disputes: 3
-            }
-        }));
+        const response = await apiClient.get('/users/stats/');
         return response.data;
     },
 
@@ -27,6 +18,53 @@ const adminService = {
 
     blockUser: async (userId) => {
         const response = await apiClient.post(`/users/${userId}/block/`);
+        return response.data;
+    },
+
+    unblockUser: async (userId) => {
+        const response = await apiClient.post(`/users/${userId}/unblock/`);
+        return response.data;
+    },
+
+    toggleVerifyUser: async (userId) => {
+        const response = await apiClient.post(`/users/${userId}/toggle-verify/`);
+        return response.data;
+    },
+
+    toggleVipUser: async (userId) => {
+        const response = await apiClient.post(`/users/${userId}/toggle-vip/`);
+        return response.data;
+    },
+
+    // Categories
+    getCategories: async () => {
+        const response = await apiClient.get('/jobs/categories/');
+        return response.data;
+    },
+    createCategory: async (data) => {
+        const response = await apiClient.post('/jobs/categories/', data);
+        return response.data;
+    },
+    deleteCategory: async (id) => {
+        await apiClient.delete(`/jobs/categories/${id}/`);
+    },
+
+    // Skills
+    getSkills: async () => {
+        const response = await apiClient.get('/profiles/skills/');
+        return response.data;
+    },
+    createSkill: async (data) => {
+        const response = await apiClient.post('/profiles/skills/', data);
+        return response.data;
+    },
+    deleteSkill: async (id) => {
+        await apiClient.delete(`/profiles/skills/${id}/`);
+    },
+
+    // Transactions
+    getTransactions: async () => {
+        const response = await apiClient.get('/transactions/');
         return response.data;
     },
 

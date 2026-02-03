@@ -16,6 +16,12 @@ class Proposal(models.Model):
         related_name='proposals'
     )
     
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        ACCEPTED = 'ACCEPTED', 'Accepted'
+        REJECTED = 'REJECTED', 'Rejected'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
     message = models.TextField()
     price = models.DecimalField(
         max_digits=10,
@@ -26,7 +32,12 @@ class Proposal(models.Model):
         help_text="Expected duration in days"
     )
     
-    is_accepted = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

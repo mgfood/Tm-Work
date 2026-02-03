@@ -25,6 +25,36 @@ const profilesService = {
     getSkills: async () => {
         const response = await apiClient.get('/profiles/skills/');
         return response.data;
+    },
+
+    deleteAvatar: async () => {
+        const response = await apiClient.post('/profiles/delete-avatar/');
+        return response.data;
+    },
+
+    // --- Portfolio Methods ---
+    getPortfolioItems: async (userId) => {
+        const response = await apiClient.get('/profiles/portfolio/', { params: { user_id: userId } });
+        return response.data;
+    },
+
+    addPortfolioItem: async (formData) => {
+        const response = await apiClient.post('/profiles/portfolio/', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
+    },
+
+    updatePortfolioItem: async (itemId, formData) => {
+        const response = await apiClient.patch(`/profiles/portfolio/${itemId}/`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
+    },
+
+    deletePortfolioItem: async (itemId) => {
+        const response = await apiClient.delete(`/profiles/portfolio/${itemId}/`);
+        return response.data;
     }
 };
 

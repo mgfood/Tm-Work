@@ -3,10 +3,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     Clock, DollarSign, User, Calendar, ArrowLeft,
     Send, AlertCircle, CheckCircle2, FileText,
-    Briefcase, Check
+    Briefcase, Check, MessageSquare
 } from 'lucide-react';
 import jobsService from '../../api/jobsService';
 import proposalsService from '../../api/proposalsService';
+import chatService from '../../api/chatService';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
 
@@ -180,7 +181,7 @@ const JobDetailPage = () => {
 
                             {proposals.length === 0 ? (
                                 <div className="premium-card p-12 text-center text-slate-500">
-                                    Пока нет откликов на этот проект.
+                                    Пока нет откликов на этот заказ.
                                 </div>
                             ) : (
                                 <div className="space-y-4">
@@ -197,7 +198,7 @@ const JobDetailPage = () => {
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-slate-900">Фрилансер #{proposal.freelancer}</div>
-                                                        <div className="text-xs text-slate-400">Отправлено {new Date().toLocaleDateString('ru-RU')}</div>
+                                                        <div className="text-xs text-slate-400">Отправлено {new Date(proposal.created_at).toLocaleDateString('ru-RU')}</div>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
@@ -211,13 +212,26 @@ const JobDetailPage = () => {
                                             </p>
 
                                             {isClient && job.status === 'PUBLISHED' && !hasAcceptedProposal && (
-                                                <button
-                                                    onClick={() => handleAcceptProposal(proposal.id)}
-                                                    disabled={acceptingId === proposal.id}
-                                                    className="w-full btn-primary py-2 text-sm flex items-center justify-center gap-2"
-                                                >
-                                                    {acceptingId === proposal.id ? 'Принятие...' : <><Check size={16} /> Принять отклик</>}
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleAcceptProposal(proposal.id)}
+                                                        disabled={acceptingId === proposal.id}
+                                                        className="flex-grow btn-primary py-2 text-sm flex items-center justify-center gap-2"
+                                                    >
+                                                        {acceptingId === proposal.id ? 'Принятие...' : <><Check size={16} /> Принять отклик</>}
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                await chatService.getOrCreateThread(proposal.freelancer, 'JOB', job.id);
+                                                                navigate('/chat');
+                                                            } catch (e) { alert('Ошибка при создании чата'); }
+                                                        }}
+                                                        className="btn-secondary py-2 px-6 text-sm flex items-center gap-2"
+                                                    >
+                                                        <MessageSquare size={16} /> Обсудить
+                                                    </button>
+                                                </div>
                                             )}
 
                                             {proposal.is_accepted && (
@@ -353,7 +367,12 @@ const JobDetailPage = () => {
                                 <div className="text-sm text-slate-500">На платформе с 2026</div>
                             </div>
                         </div>
-                        <button className="w-full btn-secondary py-3 text-sm">Профиль заказчика</button>
+                        <Link
+                            to={`/talents/${job.client}`}
+                            className="w-full btn-secondary py-3 text-sm block text-center"
+                        >
+                            Профиль заказчика
+                        </Link>
                     </div>
                 </div>
             </div>

@@ -32,8 +32,28 @@ const authService = {
         localStorage.removeItem('refresh_token');
     },
 
+    acceptProposal: async (id) => {
+        const response = await apiClient.post(`/proposals/${id}/accept/`);
+        return response.data;
+    },
+
+    rejectProposal: async (id) => {
+        const response = await apiClient.post(`/proposals/${id}/reject/`);
+        return response.data;
+    },
+
+    cancelProposal: async (id) => {
+        const response = await apiClient.post(`/proposals/${id}/cancel/`);
+        return response.data;
+    },
+
     getCurrentUser: async () => {
         const response = await apiClient.get('/auth/me/');
+        return response.data;
+    },
+
+    toggleRole: async (role) => {
+        const response = await apiClient.post('/users/toggle-role/', { role });
         return response.data;
     },
 };

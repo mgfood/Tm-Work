@@ -14,6 +14,8 @@ class RoleSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for User model (read-only for responses)"""
     roles = RoleSerializer(many=True, read_only=True)
+    is_verified = serializers.BooleanField(source='profile.is_verified', read_only=True)
+    is_vip = serializers.BooleanField(source='profile.is_vip', read_only=True)
     
     class Meta:
         model = User
@@ -23,10 +25,14 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name', 
             'last_name', 
             'roles',
+            'is_verified',
+            'is_vip',
             'is_active',
+            'is_staff',
+            'is_superuser',
             'date_joined'
         ]
-        read_only_fields = ['id', 'date_joined', 'is_active']
+        read_only_fields = ['id', 'date_joined', 'is_active', 'is_staff', 'is_superuser']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -68,7 +74,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return attrs
     
     def create(self, validated_data):
-        """Create new user"""
+        """Create new user with default roles"""
         validated_data.pop('password_confirm')
         user = User.objects.create_user(
             email=validated_data['email'],
@@ -76,6 +82,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', '')
         )
+        
+        # Add default roles (Client and Freelancer)
+        user.add_role(Role.Type.CLIENT)
+        user.add_role(Role.Type.FREELANCER)
+        
         return user
 
 

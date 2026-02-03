@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
     return (
         <footer className="bg-slate-900 text-slate-400 py-16 px-6">
@@ -15,28 +17,28 @@ const Footer = () => {
                     <div>
                         <h3 className="text-white font-semibold mb-6">Навигация</h3>
                         <ul className="space-y-4">
-                            <li><a href="#" className="hover:text-white transition-colors">Поиск работы</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Создать заказ</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Поиск талантов</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Как это работает</a></li>
+                            <li><Link to="/jobs" className="hover:text-white transition-colors">Поиск работы</Link></li>
+                            <li><Link to="/jobs/create" className="hover:text-white transition-colors">Создать заказ</Link></li>
+                            <li><Link to="/talents" className="hover:text-white transition-colors">Поиск талантов</Link></li>
+                            <li><Link to="/" className="hover:text-white transition-colors">Как это работает</Link></li>
                         </ul>
                     </div>
                     <div>
                         <h3 className="text-white font-semibold mb-6">Компания</h3>
                         <ul className="space-y-4">
-                            <li><a href="#" className="hover:text-white transition-colors">О нас</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Помощь и поддержка</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Правила платформы</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Контакты</a></li>
+                            <li><Link to="/" className="hover:text-white transition-colors">О нас</Link></li>
+                            <li><Link to="/contact" className="hover:text-white transition-colors">Помощь и поддержка</Link></li>
+                            <li><Link to="/" className="hover:text-white transition-colors">Правила платформы</Link></li>
+                            <li><Link to="/contact" className="hover:text-white transition-colors">Контакты</Link></li>
                         </ul>
                     </div>
                 </div>
                 <div className="border-t border-slate-800 pt-8 flex flex-col md:row justify-between items-center gap-4">
                     <p>© 2026 TmWork. Все права защищены.</p>
                     <div className="flex gap-6">
-                        <a href="#" className="hover:text-white transition-colors">Instagram</a>
-                        <a href="#" className="hover:text-white transition-colors">Telegram</a>
-                        <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
+                        <a href="https://t.me" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Telegram</a>
+                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">LinkedIn</a>
                     </div>
                 </div>
             </div>
