@@ -25,6 +25,13 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 // Chat Pages
 import ChatPage from './pages/chat/ChatPage';
 
+// Wallet Pages
+import WalletPage from './pages/WalletPage';
+
+// Notification Pages
+import NotificationsPage from './pages/NotificationsPage';
+import BroadcastPage from './pages/admin/BroadcastPage';
+
 function App() {
     return (
         <AuthProvider>
@@ -53,6 +60,12 @@ function App() {
                             <Route path="/talents" element={<TalentListPage />} />
                             <Route path="/profile" element={<MyProfilePage />} />
                             <Route path="/talents/:id" element={<TalentProfilePage />} />
+
+                            <Route path="/wallet" element={<WalletPage />} />
+
+                            {/* Notification routes */}
+                            <Route path="/notifications" element={<NotificationsPage />} />
+                            <Route path="/admin/broadcast" element={<BroadcastPage />} />
 
                             {/* Chat Route */}
                             <Route path="/chat" element={<ChatPage />} />

@@ -79,3 +79,54 @@ class MessageViewSet(viewsets.ModelViewSet):
         
         serializer = ThreadSerializer(thread, context={'request': request})
         return Response(serializer.data)
+
+class AdminBroadcastView(viewsets.ViewSet):
+    permission_classes = [permissions.IsAdminUser]
+
+    @action(detail=False, methods=['post'])
+    def broadcast(self, request):
+        from apps.users.utils import get_system_user
+        
+        message_content = request.data.get('message')
+        target_type = request.data.get('target_type', 'ALL') # 'ALL' or 'SELECTED'
+        user_ids = request.data.get('user_ids', [])
+
+        if not message_content:
+            return Response({"error": "Message content is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        system_user = get_system_user()
+        
+        if target_type == 'ALL':
+            recipients = User.objects.filter(is_active=True).exclude(id=system_user.id)
+        else:
+            recipients = User.objects.filter(id__in=user_ids)
+
+        broadcast_count = 0
+        for recipient in recipients:
+            # Get or create SYSTEM thread for this recipient
+            thread = Thread.objects.filter(
+                type=Thread.ThreadType.SYSTEM,
+                participants=recipient
+            ).filter(participants=system_user).first()
+
+            if not thread:
+                thread = Thread.objects.create(type=Thread.ThreadType.SYSTEM)
+                thread.participants.add(system_user, recipient)
+            
+            # Create message
+            Message.objects.create(
+                thread=thread,
+                sender=system_user,
+                content=message_content
+            )
+            # Notify via Notification app too (optional but recommended in TOC)
+            from apps.notifications.utils import create_notification
+            create_notification(
+                user=recipient,
+                title="Системное сообщение",
+                message=message_content,
+                link="/chat"
+            )
+            broadcast_count += 1
+
+        return Response({"status": f"Broadcast sent to {broadcast_count} users"})

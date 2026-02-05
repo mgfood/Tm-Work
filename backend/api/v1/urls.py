@@ -9,4 +9,6 @@ urlpatterns = [
     path('escrow/', include('apps.escrow.urls')),
     path('transactions/', include('apps.transactions.urls')),
     path('chat/', include('apps.chat.urls')),
+    path('reviews/', include('apps.reviews.urls')),
+    path('notifications/', include('apps.notifications.urls')),
 ]

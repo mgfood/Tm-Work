@@ -135,3 +135,37 @@ class JobViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except JobFile.DoesNotExist:
             return Response({'error': 'File not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['post'], url_path='submit-work')
+    def submit_work(self, request, pk=None):
+        job = self.get_object()
+        content = request.data.get('content')
+        file_ids = request.data.get('file_ids', [])
+        
+        if not content:
+            return Response({'error': 'Content is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            submission = JobService.submit_work(job, request.user, content, file_ids)
+            from .serializers import JobSubmissionSerializer
+            return Response(JobSubmissionSerializer(submission).data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='approve-work')
+    def approve_work(self, request, pk=None):
+        job = self.get_object()
+        try:
+            JobService.approve_work(job, request.user)
+            return Response({'status': 'job completed and funds released'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='request-revision')
+    def request_revision(self, request, pk=None):
+        job = self.get_object()
+        try:
+            JobService.change_status(job, Job.Status.IN_PROGRESS, request.user)
+            return Response({'status': 'job returned for revision'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

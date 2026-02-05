@@ -66,6 +66,13 @@ class Profile(models.Model):
     freelancer_reviews_count = models.PositiveIntegerField(default=0)
     client_reviews_count = models.PositiveIntegerField(default=0)
     completed_works_count = models.PositiveIntegerField(default=0)
+    
+    balance = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=0.00,
+        validators=[MinValueValidator(0)]
+    )
 
     class Meta:
         db_table = 'profiles'

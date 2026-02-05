@@ -8,6 +8,7 @@ class Thread(models.Model):
         SUPPORT = 'SUPPORT', _('Support')
         JOB = 'JOB', _('Job')
         PERSONAL = 'PERSONAL', _('Personal')
+        SYSTEM = 'SYSTEM', _('System')
 
     type = models.CharField(
         max_length=20,

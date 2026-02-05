@@ -80,7 +80,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             'experience_years',
             'languages',
             'social_links',
-            'completed_works_count'
+            'completed_works_count',
+            'balance'
         ]
         read_only_fields = [
             'user', 
@@ -88,5 +89,6 @@ class ProfileSerializer(serializers.ModelSerializer):
             'client_rating',
             'freelancer_reviews_count',
             'client_reviews_count',
-            'completed_works_count'
+            'completed_works_count',
+            'balance'
         ]

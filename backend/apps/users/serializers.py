@@ -16,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
     roles = RoleSerializer(many=True, read_only=True)
     is_verified = serializers.BooleanField(source='profile.is_verified', read_only=True)
     is_vip = serializers.BooleanField(source='profile.is_vip', read_only=True)
+    balance = serializers.DecimalField(source='profile.balance', max_digits=12, decimal_places=2, read_only=True)
     
     class Meta:
         model = User
@@ -27,6 +28,7 @@ class UserSerializer(serializers.ModelSerializer):
             'roles',
             'is_verified',
             'is_vip',
+            'balance',
             'is_active',
             'is_staff',
             'is_superuser',

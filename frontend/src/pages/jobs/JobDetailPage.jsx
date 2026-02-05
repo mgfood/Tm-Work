@@ -3,13 +3,16 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     Clock, DollarSign, User, Calendar, ArrowLeft,
     Send, AlertCircle, CheckCircle2, FileText,
-    Briefcase, Check, MessageSquare
+    Briefcase, Check, MessageSquare, Loader2
 } from 'lucide-react';
 import jobsService from '../../api/jobsService';
 import proposalsService from '../../api/proposalsService';
 import chatService from '../../api/chatService';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
+import ReviewForm from '../../components/reviews/ReviewForm';
+import ReviewCard from '../../components/reviews/ReviewCard';
+import reviewsService from '../../api/reviewsService';
 
 const JobDetailPage = () => {
     const { id } = useParams();
@@ -18,6 +21,7 @@ const JobDetailPage = () => {
 
     const [job, setJob] = useState(null);
     const [proposals, setProposals] = useState([]);
+    const [jobReviews, setJobReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -30,17 +34,24 @@ const JobDetailPage = () => {
     // Proposal acceptance state
     const [acceptingId, setAcceptingId] = useState(null);
 
+    // Submission and Action state
+    const [submissionContent, setSubmissionContent] = useState('');
+    const [isSubmittingWork, setIsSubmittingWork] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
+
     useEffect(() => {
         const fetchJobData = async () => {
             try {
                 setLoading(true);
-                const [jobData, proposalsData] = await Promise.all([
+                const [jobData, proposalsData, reviewsData] = await Promise.all([
                     jobsService.getJobById(id),
-                    proposalsService.getProposals({ job: id }).catch(() => ({ results: [] }))
+                    proposalsService.getProposals({ job: id }).catch(() => ({ results: [] })),
+                    apiClient.get(`/reviews/?job=${id}`).catch(() => ({ data: [] }))
                 ]);
 
                 setJob(jobData);
                 setProposals(proposalsData.results || proposalsData);
+                setJobReviews(reviewsData.data.results || reviewsData.data);
                 setProposalData(prev => ({ ...prev, price: jobData.budget }));
             } catch (err) {
                 setError('Заказ не найден или у вас нет доступа.');
@@ -95,6 +106,56 @@ const JobDetailPage = () => {
         }
     };
 
+    const handleSubmitWork = async (e) => {
+        e.preventDefault();
+        if (!submissionContent) return;
+
+        setIsSubmittingWork(true);
+        try {
+            await apiClient.post(`/jobs/${id}/submit-work/`, {
+                content: submissionContent
+            });
+            // Refresh state
+            const updatedJob = await jobsService.getJobById(id);
+            setJob(updatedJob);
+            setSubmissionContent('');
+        } catch (err) {
+            alert(err.response?.data?.error || 'Ошибка при сдаче работы');
+        } finally {
+            setIsSubmittingWork(false);
+        }
+    };
+
+    const handleApproveWork = async () => {
+        if (!window.confirm('Вы уверены? Деньги будут переведены исполнителю.')) {
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            await apiClient.post(`/jobs/${id}/approve-work/`);
+            const updatedJob = await jobsService.getJobById(id);
+            setJob(updatedJob);
+        } catch (err) {
+            alert(err.response?.data?.error || 'Ошибка при одобрении работы');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleRequestRevision = async () => {
+        setActionLoading(true);
+        try {
+            await apiClient.post(`/jobs/${id}/request-revision/`);
+            const updatedJob = await jobsService.getJobById(id);
+            setJob(updatedJob);
+        } catch (err) {
+            alert(err.response?.data?.error || 'Ошибка при возврате на доработку');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     if (loading) return (
         <div className="max-w-4xl mx-auto px-6 py-20 animate-pulse">
             <div className="h-10 w-2/3 bg-slate-100 rounded mb-8"></div>
@@ -128,8 +189,8 @@ const JobDetailPage = () => {
                     <div className="premium-card p-10">
                         <div className="flex flex-wrap items-center gap-3 mb-6">
                             <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${job.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' :
-                                    job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
-                                        'bg-slate-100 text-slate-700'
+                                job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-slate-100 text-slate-700'
                                 }`}>
                                 {job.status_display || job.status}
                             </span>
@@ -246,6 +307,70 @@ const JobDetailPage = () => {
                         </div>
                     )}
 
+                    {/* Freelancer: Submit Work Section */}
+                    {job.status === 'IN_PROGRESS' && user?.id === job.freelancer && (
+                        <div className="premium-card p-10 bg-primary-50/30 border-primary-100">
+                            <h3 className="text-2xl font-bold text-slate-900 mb-4">Сдать работу</h3>
+                            <p className="text-slate-600 mb-6">Опишите выполненную работу или прикрепите ссылки на результат.</p>
+                            <form onSubmit={handleSubmitWork} className="space-y-4">
+                                <textarea
+                                    value={submissionContent}
+                                    onChange={(e) => setSubmissionContent(e.target.value)}
+                                    placeholder="Ваше сообщение заказчику..."
+                                    className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary-100 outline-none transition-all min-h-[150px]"
+                                    required
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isSubmittingWork}
+                                    className="btn-primary w-full py-4 flex items-center justify-center gap-2"
+                                >
+                                    {isSubmittingWork ? <Loader2 className="animate-spin" /> : <Send size={20} />}
+                                    Отправить работу на проверку
+                                </button>
+                            </form>
+                        </div>
+                    )}
+
+                    {/* Client: Review Submission Section */}
+                    {job.status === 'SUBMITTED' && user?.id === job.client && (
+                        <div className="premium-card p-10 bg-yellow-50/30 border-yellow-100">
+                            <h3 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                                <CheckCircle2 className="text-yellow-600" />
+                                Работа сдана на проверку
+                            </h3>
+                            <div className="bg-white p-6 rounded-2xl border border-yellow-100 mb-8">
+                                <p className="text-slate-700 whitespace-pre-wrap">{job.submission?.content}</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <button
+                                    onClick={handleApproveWork}
+                                    disabled={actionLoading}
+                                    className="px-8 py-4 bg-green-600 text-white font-bold rounded-2xl hover:bg-green-700 transition-all shadow-lg shadow-green-100 flex items-center justify-center gap-2"
+                                >
+                                    {actionLoading ? <Loader2 className="animate-spin" /> : <Check size={20} />}
+                                    Принять и оплатить
+                                </button>
+                                <button
+                                    onClick={handleRequestRevision}
+                                    disabled={actionLoading}
+                                    className="px-8 py-4 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-2xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                                >
+                                    Вернуть на доработку
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Freelancer: Waiting for Review Section */}
+                    {job.status === 'SUBMITTED' && user?.id === job.freelancer && (
+                        <div className="premium-card p-10 bg-slate-50 border-slate-200 text-center">
+                            <Clock size={48} className="mx-auto text-slate-400 mb-4" />
+                            <h3 className="text-2xl font-bold text-slate-900">Работа на проверке</h3>
+                            <p className="text-slate-500 mt-2">Заказчик проверяет ваш результат. Вы получите уведомление после принятия.</p>
+                        </div>
+                    )}
+
                     {/* Proposal Form (For Freelancers) */}
                     {!isClient && !submitSuccess && job.status === 'PUBLISHED' && (
                         <div className="premium-card p-10 border-2 border-primary-50">
@@ -324,6 +449,35 @@ const JobDetailPage = () => {
                             >
                                 Вернуться к поиску
                             </button>
+                        </div>
+                    )}
+
+                    {/* Reviews for this Job */}
+                    {job.status === 'COMPLETED' && (
+                        <div className="space-y-8">
+                            <h3 className="text-2xl font-bold text-slate-900">Обмен отзывами</h3>
+
+                            {/* Existing Reviews */}
+                            {jobReviews.length > 0 && (
+                                <div className="grid grid-cols-1 gap-6">
+                                    {jobReviews.map(rev => (
+                                        <ReviewCard key={rev.id} review={rev} />
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Review Form */}
+                            {job.status === 'COMPLETED' &&
+                                (user?.id === job.client || user?.id === job.freelancer) &&
+                                !jobReviews.some(r => r.author === user?.id) && (
+                                    <ReviewForm
+                                        job={job}
+                                        onReviewSubmitted={async () => {
+                                            const { data } = await apiClient.get(`/reviews/?job=${id}`);
+                                            setJobReviews(data.results || data);
+                                        }}
+                                    />
+                                )}
                         </div>
                     )}
                 </div>

@@ -1,7 +1,8 @@
 import { useNavigate, Link } from 'react-router-dom';
-import { Menu, X, User as UserIcon, LogOut, LayoutDashboard, Search, Users, ShieldAlert, Mail, MessageSquare } from 'lucide-react';
+import { Menu, X, User as UserIcon, LogOut, LayoutDashboard, Search, Users, ShieldAlert, Mail, MessageSquare, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './notifications/NotificationBell';
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -41,6 +42,11 @@ const Navbar = () => {
                                 )}
                                 <Link to="/dashboard" className="text-slate-400 hover:text-primary-600 transition-colors" title="Дашборд">
                                     <LayoutDashboard size={20} />
+                                </Link>
+                                <NotificationBell />
+                                <Link to="/wallet" className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-full text-slate-700 hover:text-primary-600 transition-colors" title="Кошелек">
+                                    <Wallet size={18} className="text-primary-600" />
+                                    <span className="font-bold text-sm">{user.balance || '0.00'} TMT</span>
                                 </Link>
                                 <Link to="/jobs/create" className="btn-primary text-xs py-2 px-4 whitespace-nowrap">
                                     Создать заказ
@@ -84,6 +90,10 @@ const Navbar = () => {
                             <Link to="/dashboard" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-2 font-medium">
                                 <LayoutDashboard size={20} className="text-primary-600" />
                                 Дашборд (Мои заказы)
+                            </Link>
+                            <Link to="/wallet" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-2 font-medium">
+                                <Wallet size={20} className="text-primary-600" />
+                                Кошелек ({user.balance || '0.00'} TMT)
                             </Link>
                             <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-2 font-medium">
                                 <UserIcon size={20} className="text-primary-600" />

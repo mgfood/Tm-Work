@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.core.exceptions import ValidationError
 from .models import Job
 
@@ -8,7 +9,7 @@ class JobService:
         Job.Status.DRAFT: [Job.Status.PUBLISHED, Job.Status.CANCELLED],
         Job.Status.PUBLISHED: [Job.Status.IN_PROGRESS, Job.Status.CANCELLED],
         Job.Status.IN_PROGRESS: [Job.Status.SUBMITTED, Job.Status.DISPUTE, Job.Status.CANCELLED],
-        Job.Status.SUBMITTED: [Job.Status.COMPLETED, Job.Status.DISPUTE],
+        Job.Status.SUBMITTED: [Job.Status.COMPLETED, Job.Status.DISPUTE, Job.Status.IN_PROGRESS],
         Job.Status.DISPUTE: [Job.Status.COMPLETED, Job.Status.CANCELLED, Job.Status.IN_PROGRESS],
         Job.Status.COMPLETED: [],  # Конечный статус
         Job.Status.CANCELLED: [],   # Конечный статус
@@ -57,4 +58,54 @@ class JobService:
         job.save(update_fields=['status', 'updated_at'])
         
         # TODO: Логирование изменения статуса (JobStatusLog)
+        return job
+
+    @staticmethod
+    @transaction.atomic
+    def submit_work(job: Job, freelancer, content, file_ids=None):
+        """
+        Фрилансер сдает работу.
+        """
+        if job.freelancer != freelancer:
+            raise ValidationError("Only the assigned freelancer can submit work.")
+        
+        # Смена статуса через основной метод (с проверкой прав фрилансера внутри)
+        JobService.change_status(job, Job.Status.SUBMITTED, freelancer)
+
+        # Создание или обновление записи о сдаче
+        from .models import JobSubmission
+        submission, created = JobSubmission.objects.get_or_create(
+            job=job,
+            defaults={'content': content}
+        )
+        if not created:
+            submission.content = content
+            submission.save()
+        
+        if file_ids:
+            submission.files.set(file_ids)
+
+        return submission
+
+    @staticmethod
+    @transaction.atomic
+    def approve_work(job: Job, client):
+        """
+        Заказчик одобряет работу и инициирует выплату.
+        """
+        if job.client != client:
+            raise ValidationError("Only the client can approve work.")
+
+        # Смена статуса (проверка прав клиента внутри)
+        JobService.change_status(job, Job.Status.COMPLETED, client)
+
+        # Выплата средств из Escrow
+        from apps.escrow.services import EscrowService
+        if hasattr(job, 'escrow'):
+            EscrowService.release_funds(job.escrow, client)
+        else:
+            # Если это заказ без Escrow (например, постоплата вне системы), 
+            # просто закрываем, но по ТЗ мы работаем с Escrow.
+            pass
+
         return job

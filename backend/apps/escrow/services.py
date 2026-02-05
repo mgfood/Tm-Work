@@ -49,6 +49,11 @@ class EscrowService:
         escrow.status = Escrow.Status.RELEASED
         escrow.save()
 
+        # Начисление средств на баланс исполнителя
+        profile = escrow.payee.profile
+        profile.balance += escrow.amount
+        profile.save(update_fields=['balance'])
+
         # Логирование выплаты исполнителю
         TransactionService.log_transaction(
             user=escrow.payee,

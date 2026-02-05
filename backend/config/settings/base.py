@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'apps.escrow',
     'apps.transactions',
     'apps.chat',
+    'apps.reviews',
+    'apps.notifications',
     'drf_spectacular',
 ]
 

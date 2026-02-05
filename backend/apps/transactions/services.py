@@ -15,3 +15,19 @@ class TransactionService:
             reference_id=reference_id,
             description=description
         )
+    @staticmethod
+    @transaction.atomic
+    def process_deposit(user, amount, description=None):
+        """
+        Processes a deposit: updates profile balance and logs transaction.
+        """
+        profile = user.profile
+        profile.balance += amount
+        profile.save()
+
+        return Transaction.objects.create(
+            user=user,
+            amount=amount,
+            type=Transaction.Type.DEPOSIT,
+            description=description or f"Deposit of {amount} TMT"
+        )

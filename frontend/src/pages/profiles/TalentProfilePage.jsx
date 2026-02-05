@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import profilesService from '../../api/profilesService';
 import chatService from '../../api/chatService';
+import reviewsService from '../../api/reviewsService';
+import ReviewCard from '../../components/reviews/ReviewCard';
 import { useAuth } from '../../context/AuthContext';
 
 const TalentProfilePage = () => {
@@ -16,6 +18,7 @@ const TalentProfilePage = () => {
     const { user } = useAuth();
     const [profile, setProfile] = useState(null);
     const [portfolioItems, setPortfolioItems] = useState([]);
+    const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -23,12 +26,14 @@ const TalentProfilePage = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [profileData, portfolioData] = await Promise.all([
+                const [profileData, portfolioData, reviewsData] = await Promise.all([
                     profilesService.getProfileByUserId(id),
-                    profilesService.getPortfolioItems(id)
+                    profilesService.getPortfolioItems(id),
+                    reviewsService.getReviews(id)
                 ]);
                 setProfile(profileData);
                 setPortfolioItems(portfolioData.results || portfolioData);
+                setReviews(reviewsData.results || reviewsData);
             } catch (err) {
                 setError('Профиль не найден');
                 console.error(err);
@@ -266,6 +271,24 @@ const TalentProfilePage = () => {
                             </div>
                         </section>
                     )}
+                    {/* Reviews Section */}
+                    <section>
+                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
+                            <div className="w-8 h-px bg-slate-200"></div> Отзывы ({reviews.length})
+                        </h2>
+                        <div className="space-y-6">
+                            {reviews.length > 0 ? (
+                                reviews.map(review => (
+                                    <ReviewCard key={review.id} review={review} />
+                                ))
+                            ) : (
+                                <div className="text-center py-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
+                                    <Star size={32} className="mx-auto text-slate-200 mb-4" />
+                                    <p className="text-slate-400 italic">Отзывов пока нет</p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>

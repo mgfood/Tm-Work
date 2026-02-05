@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Job, JobFile, Category
+from .models import Job, JobFile, Category, JobSubmission
 from apps.users.models import User
 
 class JobFileSerializer(serializers.ModelSerializer):
@@ -15,6 +15,21 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'icon']
 
 
+    def validate_budget(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Budget must be positive.")
+        return value
+
+
+class JobSubmissionSerializer(serializers.ModelSerializer):
+    files = JobFileSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = JobSubmission
+        fields = ['id', 'job', 'content', 'files', 'created_at']
+        read_only_fields = ['job', 'created_at']
+
+
 class JobSerializer(serializers.ModelSerializer):
     client_email = serializers.EmailField(source='client.email', read_only=True)
     freelancer_email = serializers.EmailField(source='freelancer.email', read_only=True)
@@ -27,13 +42,14 @@ class JobSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    submission = JobSubmissionSerializer(read_only=True)
 
     class Meta:
         model = Job
         fields = [
             'id', 'title', 'description', 'budget', 'deadline', 
             'status', 'category', 'category_id', 'client', 'client_email', 'freelancer', 
-            'freelancer_email', 'files', 'created_at', 'updated_at'
+            'freelancer_email', 'files', 'submission', 'created_at', 'updated_at'
         ]
         read_only_fields = ['status', 'client', 'freelancer', 'created_at', 'updated_at']
 
