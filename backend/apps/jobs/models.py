@@ -121,3 +121,30 @@ class JobSubmission(models.Model):
 
     def __str__(self):
         return f"Submission for {self.job.title}"
+
+
+class JobStatusLog(models.Model):
+    job = models.ForeignKey(
+        Job,
+        on_delete=models.CASCADE,
+        related_name='status_logs'
+    )
+    from_status = models.CharField(max_length=20, choices=Job.Status.choices)
+    to_status = models.CharField(max_length=20, choices=Job.Status.choices)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'job_status_logs'
+        verbose_name = _('Job Status Log')
+        verbose_name_plural = _('Job Status Logs')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Status change: {self.from_status} -> {self.to_status} for {self.job.title}"

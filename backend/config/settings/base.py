@@ -14,11 +14,18 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-this-in-productio
 
 ALLOWED_HOSTS = ['*']
 
-CORS_ALLOW_ALL_ORIGINS = True  # For development ease
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# CORS Settings
+CORS_ALLOWED_ORIGINS_RAW = env('CORS_ALLOWED_ORIGINS', default='*')
+
+if CORS_ALLOWED_ORIGINS_RAW == '*':
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOWED_ORIGINS = []
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    # Expecting comma separated values: "http://localhost:3000,http://example.com"
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip() for origin in CORS_ALLOWED_ORIGINS_RAW.split(',') if origin.strip()
+    ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -132,3 +139,12 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
+
+# Email Settings
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='no-reply@tmwork.tm')

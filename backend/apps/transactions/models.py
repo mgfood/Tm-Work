@@ -11,6 +11,7 @@ class Transaction(models.Model):
         ESCROW_RELEASE = 'ESCROW_RELEASE', _('Escrow Release')
         ESCROW_REFUND = 'ESCROW_REFUND', _('Escrow Refund')
         FEE = 'FEE', _('Fee')
+        PURCHASE_VIP = 'PURCHASE_VIP', _('Purchase VIP')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(

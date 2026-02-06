@@ -50,3 +50,7 @@ body {
     width: 0%;
   }
 }
+@keyframes progress-fast { from { width: 0%; } to { width: 100%; } }
+@keyframes shake-x { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.animate-progress-fast { animation: progress-fast 2s linear forwards; }
+.animate-shake-x { animation: shake-x 0.2s ease-in-out 0s 2; }

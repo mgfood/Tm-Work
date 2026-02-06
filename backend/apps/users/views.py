@@ -10,8 +10,75 @@ from .models import User
 from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
-    UserSerializer
+    UserSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer
 )
+
+
+class PasswordResetRequestView(APIView):
+    """
+    Request a password reset code
+    POST /api/v1/auth/password-reset/request/
+    Body: {"email": "user@example.com"}
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        email = serializer.validated_data['email']
+        user = User.objects.get(email=email)
+        
+        # Generate random 6-digit code
+        import random
+        code = str(random.randint(100000, 999999))
+        
+        # Create record
+        from .models import PasswordResetCode
+        PasswordResetCode.objects.create(user=user, code=code)
+        
+        # Send email
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        subject = 'TmWork: Код для сброса пароля'
+        message = f'Ваш код для сброса пароля: {code}. Он действителен в течение 15 минут.'
+        recipient_list = [email]
+        
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list)
+        
+        return Response({
+            'message': 'Код подтверждения отправлен на вашу электронную почту.',
+            'email': email
+        })
+
+
+class PasswordResetConfirmView(APIView):
+    """
+    Confirm password reset with code
+    POST /api/v1/auth/password-reset/confirm/
+    Body: {"email": "...", "code": "...", "password": "...", "password_confirm": "..."}
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        reset_code = serializer.validated_data['reset_code']
+        user = reset_code.user
+        
+        # Update password
+        user.set_password(serializer.validated_data['password'])
+        user.save()
+        
+        # Mark code as used
+        reset_code.is_used = True
+        reset_code.save()
+        
+        return Response({'message': 'Пароль успешно изменен.'})
 
 
 class RegisterView(generics.CreateAPIView):
@@ -33,6 +100,10 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
     permission_classes = [permissions.AllowAny]
     
+    from django_ratelimit.decorators import ratelimit
+    from django.utils.decorators import method_decorator
+    
+    @method_decorator(ratelimit(key='ip', rate='3/h', method='POST', block=True))
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -65,6 +136,10 @@ class LoginView(APIView):
     """
     permission_classes = [permissions.AllowAny]
     
+    from django_ratelimit.decorators import ratelimit
+    from django.utils.decorators import method_decorator
+    
+    @method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True))
     def post(self, request):
         serializer = UserLoginSerializer(
             data=request.data,
@@ -99,6 +174,10 @@ class LoginView(APIView):
         # Update last login
         user.last_login = timezone.now()
         user.save(update_fields=['last_login'])
+        
+        # Sync VIP status on login
+        if hasattr(user, 'profile'):
+            user.profile.sync_vip_status()
         
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
@@ -208,10 +287,51 @@ class UserViewSet(viewsets.ModelViewSet):
             'platform_fee_total': "0 TMT"
         })
 
+    def update(self, request, *args, **kwargs):
+        """
+        Update user data (admin only)
+        PATCH /api/v1/users/{id}/
+        
+        Allowed fields: first_name, last_name, email
+        """
+        user = self.get_object()
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.UPDATE_USER,
+            target_info=f"User ID: {user.id}",
+            comment=f"Updated fields: {', '.join(request.data.keys())}"
+        )
+        
+        return Response(serializer.data)
+
     def get_permissions(self):
+        """
+        Granular permissions for admin actions:
+        - Support: Can view only
+        - Moderator: Can block/unblock, verify users
+        - FinancialAdmin: Can adjust balances, view transactions
+        - Superuser/Staff: Full access
+        """
+        from apps.administration.permissions import IsModerator, IsFinancialAdmin
+        
         if self.action in ['toggle_role']:
             return [permissions.IsAuthenticated()]
-        return super().get_permissions()
+        
+        # Financial operations require FinancialAdmin role
+        if self.action in ['adjust_balance']:
+            return [IsFinancialAdmin()]
+        
+        # Moderator actions
+        if self.action in ['block', 'unblock', 'temp_block', 'toggle_verify', 'toggle_vip']:
+            return [IsModerator()]
+        
+        # Default: require staff/superuser
+        return [permissions.IsAdminUser()]
 
     @action(detail=False, methods=['post'], url_path='toggle-role')
     def toggle_role(self, request):
@@ -255,11 +375,20 @@ class UserViewSet(viewsets.ModelViewSet):
             amount = Decimal(str(amount))
             
             from django.db import transaction
+            from django.db.models import F
+            from apps.profiles.models import Profile
+            
             with transaction.atomic():
-                user.profile.balance += amount
-                if user.profile.balance < 0:
+                # Lock profile and update atomically
+                profile_qs = Profile.objects.select_for_update().filter(user=user)
+                # We need to check if balance would be negative after F update.
+                # Since F() is executed in DB, we check the result after or use a constraint.
+                # For safety, let's fetch current balance first WITH lock.
+                profile = profile_qs.get()
+                if profile.balance + amount < 0:
                      return Response({'error': 'Balance cannot be negative'}, status=status.HTTP_400_BAD_REQUEST)
-                user.profile.save()
+                
+                profile_qs.update(balance=F('balance') + amount)
 
                 # Log transaction
                 from apps.transactions.models import Transaction
@@ -423,3 +552,128 @@ class UserViewSet(viewsets.ModelViewSet):
             comment=f"Status: {status_msg}"
         )
         return Response({'status': f'User is now {status_msg}', 'is_vip': user.profile.is_vip})
+
+    @action(detail=True, methods=['post'], url_path='assign-role')
+    def assign_role(self, request, pk=None):
+        """Assign role to user (CLIENT or FREELANCER)"""
+        user = self.get_object()
+        role_name = request.data.get('role')
+        
+        from apps.users.models import Role
+        if role_name not in [Role.Type.CLIENT, Role.Type.FREELANCER]:
+            return Response({'error': 'Invalid role. Use CLIENT or FREELANCER'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if user.has_role(role_name):
+            return Response({'error': f'User already has {role_name} role'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.add_role(role_name)
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.UPDATE_USER,
+            target_info=f"User ID: {user.id}",
+            comment=f"Assigned role: {role_name}"
+        )
+        
+        return Response({
+            'status': f'Role {role_name} assigned',
+            'roles': [r.name for r in user.roles.all()]
+        })
+
+    @action(detail=True, methods=['post'], url_path='remove-role')
+    def remove_role(self, request, pk=None):
+        """Remove role from user"""
+        user = self.get_object()
+        role_name = request.data.get('role')
+        
+        from apps.users.models import Role
+        if role_name not in [Role.Type.CLIENT, Role.Type.FREELANCER]:
+            return Response({'error': 'Invalid role'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not user.has_role(role_name):
+            return Response({'error': f'User does not have {role_name} role'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.remove_role(role_name)
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.UPDATE_USER,
+            target_info=f"User ID: {user.id}",
+            comment=f"Removed role: {role_name}"
+        )
+        
+        return Response({
+            'status': f'Role {role_name} removed',
+            'roles': [r.name for r in user.roles.all()]
+        })
+
+    @action(detail=True, methods=['post'], url_path='assign-group')
+    def assign_group(self, request, pk=None):
+        """Assign admin group to user (superuser only)"""
+        if not request.user.is_superuser:
+            return Response({'error': 'Only superusers can assign admin groups'}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = self.get_object()
+        group_name = request.data.get('group')
+        
+        if group_name not in ['Support', 'Moderator', 'FinancialAdmin']:
+            return Response({'error': 'Invalid group'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        from django.contrib.auth.models import Group
+        try:
+            group = Group.objects.get(name=group_name)
+        except Group.DoesNotExist:
+            return Response({'error': f'Group {group_name} does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if group in user.groups.all():
+            return Response({'error': f'User already in {group_name} group'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.groups.add(group)
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.UPDATE_USER,
+            target_info=f"User ID: {user.id}",
+            comment=f"Assigned to group: {group_name}"
+        )
+        
+        return Response({
+            'status': f'User assigned to {group_name} group',
+            'groups': [g.name for g in user.groups.all()]
+        })
+
+    @action(detail=True, methods=['post'], url_path='remove-group')
+    def remove_group(self, request, pk=None):
+        """Remove admin group from user (superuser only)"""
+        if not request.user.is_superuser:
+            return Response({'error': 'Only superusers can remove admin groups'}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = self.get_object()
+        group_name = request.data.get('group')
+        
+        from django.contrib.auth.models import Group
+        try:
+            group = Group.objects.get(name=group_name)
+        except Group.DoesNotExist:
+            return Response({'error': f'Group {group_name} does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if group not in user.groups.all():
+            return Response({'error': f'User not in {group_name} group'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.groups.remove(group)
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.UPDATE_USER,
+            target_info=f"User ID: {user.id}",
+            comment=f"Removed from group: {group_name}"
+        )
+        
+        return Response({
+            'status': f'User removed from {group_name} group',
+            'groups': [g.name for g in user.groups.all()]
+        })

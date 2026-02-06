@@ -8,6 +8,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import ContactPage from './pages/ContactPage';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Job Pages
 import JobListPage from './pages/jobs/JobListPage';
@@ -48,6 +50,8 @@ function App() {
                                 <Route path="/login" element={<LoginPage />} />
                                 <Route path="/register" element={<RegisterPage />} />
                                 <Route path="/dashboard" element={<Dashboard />} />
+                                <Route path="/forgot-password" element={<ForgotPassword />} />
+                                <Route path="/reset-password" element={<ResetPassword />} />
 
                                 {/* Admin Routes */}
                                 <Route path="/admin-dashboard" element={<AdminDashboard />} />

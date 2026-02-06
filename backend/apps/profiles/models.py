@@ -86,11 +86,10 @@ class Profile(models.Model):
         validators=[MinValueValidator(0)]
     )
 
-    @property
-    def check_vip_status(self):
+    def sync_vip_status(self):
         """
-        Checks if the user has an active subscription and updates the is_vip flag.
-        This can be called during login or profile fetch for auto-sync.
+        Explicitly syncs the is_vip flag with active subscriptions.
+        Should be called during login or via background task.
         """
         from apps.vip.models import VIPSubscription
         from django.utils import timezone
@@ -104,26 +103,29 @@ class Profile(models.Model):
         if self.is_vip != is_active:
             self.is_vip = is_active
             self.save(update_fields=['is_vip'])
-        
         return is_active
 
     @property
-    def currently_active_subscription(self):
+    def check_vip_status(self):
+        """Read-only check of VIP status."""
         from apps.vip.models import VIPSubscription
         from django.utils import timezone
-        sub = VIPSubscription.objects.filter(
+        return VIPSubscription.objects.filter(
+            user=self.user,
+            start_date__lte=timezone.now(),
+            end_date__gte=timezone.now()
+        ).exists()
+
+    @property
+    def currently_active_subscription(self):
+        """Read-only fetch of current subscription."""
+        from apps.vip.models import VIPSubscription
+        from django.utils import timezone
+        return VIPSubscription.objects.filter(
             user=self.user,
             start_date__lte=timezone.now(),
             end_date__gte=timezone.now()
         ).first()
-
-        # Update flag as side effect when checking
-        is_active = sub is not None
-        if self.is_vip != is_active:
-            self.is_vip = is_active
-            self.save(update_fields=['is_vip'])
-            
-        return sub
 
     class Meta:
         db_table = 'profiles'

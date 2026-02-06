@@ -53,11 +53,20 @@ class JobService:
                 profile.completed_works_count += 1
                 profile.save(update_fields=['completed_works_count'])
 
-        # Сохранение
+        # Сохранение основного состояния
         job.status = new_status
         job.save(update_fields=['status', 'updated_at'])
         
-        # TODO: Логирование изменения статуса (JobStatusLog)
+        # Логирование изменения статуса (JobStatusLog)
+        from .models import JobStatusLog
+        JobStatusLog.objects.create(
+            job=job,
+            from_status=current_status,
+            to_status=new_status,
+            changed_by=user,
+            comment=f"Status changed from {current_status} to {new_status} by {user.email}"
+        )
+        
         return job
 
     @staticmethod

@@ -77,27 +77,23 @@ class VIPViewSet(viewsets.ModelViewSet):
             )
             
         with transaction.atomic():
-            # Deduct balance
-            profile.balance -= total_price
-            profile.save(update_fields=['balance'])
-            
-            # Log transaction
-            TransactionService.log_transaction(
+            # Deduct balance and log transaction atomically
+            TransactionService.process_transaction(
                 user=user,
                 amount=-total_price,
-                transaction_type=Transaction.Type.WITHDRAWAL, # Or add BUY_VIP type
+                transaction_type=Transaction.Type.PURCHASE_VIP,
                 description=f"Purchase VIP Plan: {plan.name}"
             )
             
             # Create or extend subscription
-            # Check if user already has an active subscription
             last_sub = VIPSubscription.objects.filter(user=user).order_by('-end_date').first()
             
             start_date = timezone.now()
             if last_sub and last_sub.end_date > timezone.now():
                 start_date = last_sub.end_date
             
-            end_date = start_date + timedelta(days=plan.months * 30) # Approx months
+            # Use approx 30-day months for now, but in a cleaner way
+            end_date = start_date + timedelta(days=plan.months * 30)
             
             sub = VIPSubscription.objects.create(
                 user=user,
@@ -106,7 +102,7 @@ class VIPViewSet(viewsets.ModelViewSet):
                 end_date=end_date
             )
             
-            # Update profile flag (for quick check, though logic check is safer)
+            # Update profile flag for quick visual checks
             profile.is_vip = True
             profile.save(update_fields=['is_vip'])
             

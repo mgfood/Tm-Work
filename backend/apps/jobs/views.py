@@ -43,11 +43,6 @@ class JobViewSet(viewsets.ModelViewSet):
         if category_param:
             queryset = queryset.filter(category_id=category_param)
 
-        if status_param:
-            queryset = queryset.filter(status=status_param)
-        if client_param:
-            queryset = queryset.filter(client_id=client_param)
-
         if user.is_staff:
             return queryset
 
@@ -144,6 +139,18 @@ class JobViewSet(viewsets.ModelViewSet):
         
         if not content:
             return Response({'error': 'Content is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate file ownership (IDOR protection)
+        if file_ids:
+            valid_files = JobFile.objects.filter(
+                id__in=file_ids,
+                job=job,
+                uploaded_by=request.user
+            )
+            if valid_files.count() != len(file_ids):
+                return Response({
+                    'error': 'Some files do not belong to this job or were not uploaded by you'
+                }, status=status.HTTP_403_FORBIDDEN)
             
         try:
             submission = JobService.submit_work(job, request.user, content, file_ids)
@@ -169,3 +176,47 @@ class JobViewSet(viewsets.ModelViewSet):
             return Response({'status': 'job returned for revision'})
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='force-status', permission_classes=[permissions.IsAdminUser])
+    def force_status(self, request, pk=None):
+        """
+        Force status change (admin only)
+        POST /api/v1/jobs/{id}/force-status/
+        Body: {"status": "PUBLISHED|IN_PROGRESS|SUBMITTED|COMPLETED|DISPUTE|CANCELLED", "reason": "..."}
+        """
+        job = self.get_object()
+        new_status = request.data.get('status')
+        reason = request.data.get('reason', 'Admin forced status change')
+        
+        valid_statuses = [s[0] for s in Job.Status.choices]
+        if new_status not in valid_statuses:
+            return Response({'error': f'Invalid status. Valid options: {valid_statuses}'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        old_status = job.status
+        job.status = new_status
+        job.save()
+        
+        # Логирование в аудит системы
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.UPDATE_USER,  # Мы можем добавить UPDATE_JOB позже
+            target_info=f"Job ID: {job.id}",
+            comment=f"Status changed from {old_status} to {new_status}. Reason: {reason}"
+        )
+
+        # Логирование в историю заказа
+        from .models import JobStatusLog
+        JobStatusLog.objects.create(
+            job=job,
+            from_status=old_status,
+            to_status=new_status,
+            changed_by=request.user,
+            comment=f"FORCE STATUS CHANGE by Admin: {reason}"
+        )
+        
+        return Response({
+            'status': 'Job status updated',
+            'old_status': old_status,
+            'new_status': new_status
+        })

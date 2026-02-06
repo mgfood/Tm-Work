@@ -146,3 +146,97 @@ class AdminUserDetailSerializer(UserSerializer):
             'reviews_avg': obj.profile.freelancer_rating if hasattr(obj, 'profile') else 0,
             'balance': obj.profile.balance if hasattr(obj, 'profile') else 0,
         }
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer for requesting a password reset code"""
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Пользователь с таким email не найден.")
+        return value.lower()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializer for resetting password using a code"""
+    email = serializers.EmailField(required=True)
+    code = serializers.CharField(max_length=6, required=True)
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+        min_length=8
+    )
+    password_confirm = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({"password": "Пароли не совпадают."})
+        
+        from .models import PasswordResetCode
+        reset_code = PasswordResetCode.objects.filter(
+            user__email=attrs['email'].lower(),
+            code=attrs['code'],
+            is_used=False
+        ).order_by('-created_at').first()
+
+        if not reset_code:
+            raise serializers.ValidationError({"code": "Неверный код подтверждения."})
+        
+        if reset_code.is_expired():
+            raise serializers.ValidationError({"code": "Срок действия кода истек."})
+            
+        attrs['reset_code'] = reset_code
+        return attrs
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """Serializer for requesting a password reset code"""
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Пользователь с таким email не найден.")
+        return value.lower()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """Serializer for resetting password using a code"""
+    email = serializers.EmailField(required=True)
+    code = serializers.CharField(max_length=6, required=True)
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+        min_length=8
+    )
+    password_confirm = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'}
+    )
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({"password": "Пароли не совпадают."})
+        
+        from .models import PasswordResetCode
+        reset_code = PasswordResetCode.objects.filter(
+            user__email=attrs['email'].lower(),
+            code=attrs['code'],
+            is_used=False
+        ).first()
+
+        if not reset_code:
+            raise serializers.ValidationError({"code": "Неверный код подтверждения."})
+        
+        if reset_code.is_expired():
+            raise serializers.ValidationError({"code": "Срок действия кода истек."})
+            
+        attrs['reset_code'] = reset_code
+        return attrs

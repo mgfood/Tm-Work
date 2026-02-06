@@ -23,8 +23,8 @@ class EscrowService:
         escrow.status = Escrow.Status.FUNDS_LOCKED
         escrow.save()
 
-        # Логирование операции
-        TransactionService.log_transaction(
+        # Логирование операции и списание средств
+        TransactionService.process_transaction(
             user=payer,
             amount=-amount,  # Отрицательное для плательщика
             transaction_type=Transaction.Type.ESCROW_LOCK,
@@ -71,12 +71,8 @@ class EscrowService:
         net_amount = escrow.amount - commission_amount
 
         # Начисление средств на баланс исполнителя (за вычетом комиссии)
-        profile = escrow.payee.profile
-        profile.balance += net_amount
-        profile.save(update_fields=['balance'])
-
-        # Логирование выплаты исполнителю (Net)
-        TransactionService.log_transaction(
+        # Мы используем процесс транзакции, который обновит баланс профиля
+        TransactionService.process_transaction(
             user=escrow.payee,
             amount=net_amount,
             transaction_type=Transaction.Type.ESCROW_RELEASE,
@@ -84,16 +80,12 @@ class EscrowService:
             description=f"Funds released for job: {escrow.job.title} (Net after {commission_percent}% fee)"
         )
 
-        # Логирование комиссии (Platform Fee)
+        # Логирование комиссии (Platform Fee) - это информационная запись
         if commission_amount > 0:
-            # We log it as a withdrawal or a special type if available. 
-            # In our system, the payer already lost the full 'amount'. 
-            # The payee receives 'net_amount'. The 'commission_amount' stays in the system.
-            # We create a log for audit.
             TransactionService.log_transaction(
-                user=escrow.payee, # Associated with this payee's job
-                amount=0, # It's an informational record or we can log it with a special type
-                transaction_type=Transaction.Type.WITHDRAWAL, # Or a new type FEE
+                user=escrow.payee,
+                amount=0,
+                transaction_type=Transaction.Type.FEE,
                 reference_id=str(escrow.id),
                 description=f"Platform Fee {commission_percent}%: {commission_amount} TMT"
             )
@@ -117,8 +109,8 @@ class EscrowService:
         escrow.status = Escrow.Status.REFUNDED
         escrow.save()
 
-        # Логирование возврата плательщику
-        TransactionService.log_transaction(
+        # Возврат средств плательщику
+        TransactionService.process_transaction(
             user=escrow.payer,
             amount=escrow.amount,
             transaction_type=Transaction.Type.ESCROW_REFUND,

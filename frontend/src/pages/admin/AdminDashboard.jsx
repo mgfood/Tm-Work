@@ -27,6 +27,10 @@ import apiClient from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { Navigate } from 'react-router-dom';
+import UserEditModal from '../../components/admin/UserEditModal';
+import CategoryEditModal from '../../components/admin/CategoryEditModal';
+import SkillEditModal from '../../components/admin/SkillEditModal';
+import JobEditModal from '../../components/admin/JobEditModal';
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/api\/v1\/?$/, '');
 
@@ -59,7 +63,10 @@ const AdminDashboard = () => {
     // New God Mode Modals
     const [isTempBlockModalOpen, setIsTempBlockModalOpen] = useState(false);
     const [isPasswordResetModalOpen, setIsPasswordResetModalOpen] = useState(false);
+    const [resetPasswordData, setResetPasswordData] = useState('');
     const [tempBlockData, setTempBlockData] = useState({ hours: '24', reason: '' });
+    const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+    const [selectedLucideIcon, setSelectedLucideIcon] = useState('Monitor');
     const [customIconFile, setCustomIconFile] = useState(null);
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
@@ -71,6 +78,15 @@ const AdminDashboard = () => {
         badge_icon: 'Award',
         badge_color: '#f59e0b'
     });
+
+    // Edit Modals
+    const [isUserEditModalOpen, setIsUserEditModalOpen] = useState(false);
+    const [isCategoryEditModalOpen, setIsCategoryEditModalOpen] = useState(false);
+    const [isSkillEditModalOpen, setIsSkillEditModalOpen] = useState(false);
+    const [isJobEditModalOpen, setIsJobEditModalOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
+    const [editingSkill, setEditingSkill] = useState(null);
+    const [editingJob, setEditingJob] = useState(null);
 
     const LUCIDE_ICONS = [
         'Monitor', 'Globe', 'Code', 'PenTool', 'Database', 'Layout', 'Smartphone',
@@ -228,6 +244,22 @@ const AdminDashboard = () => {
             await fetchAdminData();
         } catch (err) {
             showToast(err.response?.data?.error || 'Ошибка принудительной выплаты', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleForceRefund = async (id) => {
+        if (!window.confirm('ПРИНУДИТЕЛЬНО вернуть средства заказчику?')) return;
+        const reason = window.prompt('Укажите причину:');
+        if (!reason) return;
+        try {
+            setActionLoading(true);
+            await adminService.forceRefundEscrow(id, reason);
+            showToast('Средства возвращены заказчику', 'success');
+            await fetchAdminData();
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Ошибка принудительного возврата', 'error');
         } finally {
             setActionLoading(false);
         }
@@ -418,6 +450,9 @@ const AdminDashboard = () => {
                         {activeTab === 'overview' && 'Общая статистика'}
                         {activeTab === 'users' && 'Управление пользователями'}
                         {activeTab === 'jobs' && 'Все заказы платформы'}
+                        {activeTab === 'categories' && 'Управление категориями'}
+                        {activeTab === 'skills' && 'База навыков'}
+                        {activeTab === 'transactions' && 'История транзакций'}
                         {activeTab === 'disputes' && 'Арбитраж и споры'}
                         {activeTab === 'logs' && 'Журнал действий (Audit)'}
                         {activeTab === 'broadcast' && 'Системная рассылка'}
@@ -562,6 +597,13 @@ const AdminDashboard = () => {
                                                         </button>
                                                         <hr className="my-2 border-slate-100" />
                                                         <button
+                                                            onClick={() => { setSelectedUser(u); setIsUserEditModalOpen(true); setOpenMenu(null); }}
+                                                            className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                                        >
+                                                            <Edit size={14} /> Редактировать профиль
+                                                        </button>
+                                                        <hr className="my-2 border-slate-100" />
+                                                        <button
                                                             onClick={() => handleUserAction(u.id, 'toggle_verify')}
                                                             className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-50"
                                                         >
@@ -572,6 +614,13 @@ const AdminDashboard = () => {
                                                             className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-50"
                                                         >
                                                             {u.is_vip ? 'Убрать VIP' : 'Выдать VIP'}
+                                                        </button>
+                                                        <hr className="my-2 border-slate-100" />
+                                                        <button
+                                                            onClick={() => handleUserAction(u.id, 'delete')}
+                                                            className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                        >
+                                                            <Trash size={14} /> Удалить пользователя
                                                         </button>
                                                     </div>
                                                 )}
@@ -594,6 +643,7 @@ const AdminDashboard = () => {
                                         <th className="px-6 py-4">Бюджет</th>
                                         <th className="px-6 py-4">Статус</th>
                                         <th className="px-6 py-4">Дата</th>
+                                        <th className="px-6 py-4 text-right">Действия</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -612,6 +662,14 @@ const AdminDashboard = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-xs font-medium text-slate-500">{new Date(j.created_at).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button
+                                                    onClick={() => { setEditingJob(j); setIsJobEditModalOpen(true); }}
+                                                    className="p-2 hover:bg-slate-100 rounded-lg group/edit"
+                                                >
+                                                    <Edit size={16} className="text-slate-400 group-hover/edit:text-primary-600 transition-colors" />
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -620,11 +678,40 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
-                {activeTab === 'disputes' && (
-                    <div className="premium-card p-12 text-center text-slate-500 font-medium italic animate-in fade-in duration-500">
-                        {jobs.filter(j => j.status === 'DISPUTE').length === 0
-                            ? 'В данный момент активных споров в системе не зафиксировано.'
-                            : 'Список споров и инструментов арбитража будет доступен в следующем обновлении.'}
+                {activeTab === 'transactions' && (
+                    <div className="premium-card overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                    <tr>
+                                        <th className="px-6 py-4">Сумма</th>
+                                        <th className="px-6 py-4">Тип</th>
+                                        <th className="px-6 py-4">Пользователь</th>
+                                        <th className="px-6 py-4">Описание</th>
+                                        <th className="px-6 py-4">Дата</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {transactions.length === 0 ? (
+                                        <tr><td colSpan="5" className="p-10 text-center text-slate-400 italic">Транзакций не найдено</td></tr>
+                                    ) : transactions.map(tx => (
+                                        <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className={`px-6 py-4 font-black ${tx.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                                {tx.amount > 0 ? '+' : ''}{tx.amount} TMT
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-black uppercase">
+                                                    {tx.type}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-bold text-slate-700">{tx.user_email}</td>
+                                            <td className="px-6 py-4 text-xs text-slate-500 max-w-xs truncate">{tx.description}</td>
+                                            <td className="px-6 py-4 text-xs text-slate-400">{new Date(tx.created_at).toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
                 {activeTab === 'categories' && (
@@ -654,25 +741,34 @@ const AdminDashboard = () => {
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
                                                                     e.target.style.display = 'none';
-                                                                    e.target.nextSibling.style.display = 'block';
+                                                                    const fallback = e.target.closest('div').querySelector('.icon-fallback');
+                                                                    if (fallback) fallback.style.display = 'block';
                                                                 }}
                                                             />
                                                         ) : null}
-                                                        <div style={{ display: cat.custom_icon ? 'none' : 'block' }}>
+                                                        <div className="icon-fallback" style={{ display: cat.custom_icon ? 'none' : 'block' }}>
                                                             {(() => {
-                                                                const IconComp = LucideIcons[cat.icon] || LucideIcons.HelpCircle;
+                                                                const IconComp = LucideIcons[cat.icon] || LucideIcons.HelpCircle || LucideIcons.Monitor;
                                                                 return <IconComp size={20} />;
                                                             })()}
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => handleDeleteCategory(cat.id)}
-                                                        className="text-red-500 hover:text-red-700 font-medium text-sm"
-                                                    >
-                                                        Удалить
-                                                    </button>
+                                                    <div className="flex justify-end gap-3">
+                                                        <button
+                                                            onClick={() => { setEditingCategory(cat); setIsCategoryEditModalOpen(true); }}
+                                                            className="text-primary-600 hover:text-primary-800 font-medium text-sm"
+                                                        >
+                                                            Редактировать
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteCategory(cat.id)}
+                                                            className="text-red-500 hover:text-red-700 font-medium text-sm"
+                                                        >
+                                                            Удалить
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -790,12 +886,20 @@ const AdminDashboard = () => {
                                                 <td className="px-6 py-4 font-bold text-slate-900">{skill.name}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-500">{skill.slug}</td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => handleDeleteSkill(skill.id)}
-                                                        className="text-red-500 hover:text-red-700 font-medium text-sm"
-                                                    >
-                                                        Удалить
-                                                    </button>
+                                                    <div className="flex justify-end gap-3">
+                                                        <button
+                                                            onClick={() => { setEditingSkill(skill); setIsSkillEditModalOpen(true); }}
+                                                            className="text-primary-600 hover:text-primary-800 font-medium text-sm"
+                                                        >
+                                                            Редактировать
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteSkill(skill.id)}
+                                                            className="text-red-500 hover:text-red-700 font-medium text-sm"
+                                                        >
+                                                            Удалить
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -1516,6 +1620,50 @@ const AdminDashboard = () => {
                         </form>
                     </div>
                 </div>
+            )}
+
+            {isUserEditModalOpen && (
+                <UserEditModal
+                    user={selectedUser}
+                    onClose={() => setIsUserEditModalOpen(false)}
+                    onSuccess={() => {
+                        showToast('Данные пользователя обновлены', 'success');
+                        fetchAdminData();
+                    }}
+                />
+            )}
+
+            {isCategoryEditModalOpen && (
+                <CategoryEditModal
+                    category={editingCategory}
+                    onClose={() => setIsCategoryEditModalOpen(false)}
+                    onSuccess={() => {
+                        showToast('Категория обновлена', 'success');
+                        fetchAdminData();
+                    }}
+                />
+            )}
+
+            {isSkillEditModalOpen && (
+                <SkillEditModal
+                    skill={editingSkill}
+                    onClose={() => setIsSkillEditModalOpen(false)}
+                    onSuccess={() => {
+                        showToast('Навык обновлен', 'success');
+                        fetchAdminData();
+                    }}
+                />
+            )}
+
+            {isJobEditModalOpen && (
+                <JobEditModal
+                    job={editingJob}
+                    onClose={() => setIsJobEditModalOpen(false)}
+                    onSuccess={() => {
+                        showToast('Заказ обновлен', 'success');
+                        fetchAdminData();
+                    }}
+                />
             )}
         </div>
     );

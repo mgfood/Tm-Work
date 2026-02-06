@@ -117,6 +117,60 @@ const adminService = {
     forceRefundEscrow: async (id, reason = '') => {
         const response = await apiClient.post(`/escrow/${id}/refund/`, { reason });
         return response.data;
+    },
+
+    // User editing
+    updateUser: async (userId, data) => {
+        const response = await apiClient.patch(`/users/${userId}/`, data);
+        return response.data;
+    },
+
+    assignRole: async (userId, role) => {
+        const response = await apiClient.post(`/users/${userId}/assign-role/`, { role });
+        return response.data;
+    },
+
+    removeRole: async (userId, role) => {
+        const response = await apiClient.post(`/users/${userId}/remove-role/`, { role });
+        return response.data;
+    },
+
+    assignGroup: async (userId, group) => {
+        const response = await apiClient.post(`/users/${userId}/assign-group/`, { group });
+        return response.data;
+    },
+
+    removeGroup: async (userId, group) => {
+        const response = await apiClient.post(`/users/${userId}/remove-group/`, { group });
+        return response.data;
+    },
+
+    // Category editing
+    updateCategory: async (id, data) => {
+        const response = await apiClient.patch(`/jobs/categories/${id}/`, data);
+        return response.data;
+    },
+
+    // Skill editing
+    updateSkill: async (id, data) => {
+        const response = await apiClient.patch(`/profiles/skills/${id}/`, data);
+        return response.data;
+    },
+
+    // Job management
+    updateJob: async (id, data) => {
+        const response = await apiClient.patch(`/jobs/${id}/`, data);
+        return response.data;
+    },
+
+    deleteJob: async (id) => {
+        const response = await apiClient.delete(`/jobs/${id}/`);
+        return response.data;
+    },
+
+    forceJobStatus: async (id, status, reason = '') => {
+        const response = await apiClient.post(`/jobs/${id}/force-status/`, { status, reason });
+        return response.data;
     }
 };
 

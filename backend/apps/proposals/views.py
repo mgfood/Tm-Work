@@ -16,6 +16,10 @@ class ProposalViewSet(viewsets.ModelViewSet):
             return [IsFreelancer()]
         return super().get_permissions()
 
+    from django_ratelimit.decorators import ratelimit
+    from django.utils.decorators import method_decorator
+    
+    @method_decorator(ratelimit(key='user', rate='10/h', method='POST', block=True))
     def perform_create(self, serializer):
         serializer.save(freelancer=self.request.user)
 

@@ -112,3 +112,28 @@ class User(AbstractBaseUser, PermissionsMixin):
         role = Role.objects.filter(name=role_name).first()
         if role:
             self.roles.remove(role)
+
+
+class PasswordResetCode(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reset_codes'
+    )
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'password_reset_codes'
+        verbose_name = 'Password Reset Code'
+        verbose_name_plural = 'Password Reset Codes'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Code for {self.user.email} created at {self.created_at}"
+
+    def is_expired(self):
+        # Code is valid for 15 minutes
+        expiration_time = self.created_at + timezone.timedelta(minutes=15)
+        return timezone.now() > expiration_time
