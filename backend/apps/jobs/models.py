@@ -1,21 +1,30 @@
+from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
 
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True)
-    icon = models.CharField(max_length=50, blank=True, help_text="Lucide icon name")
+    slug = models.SlugField(unique=True, blank=True, allow_unicode=True)
+    icon = models.CharField(max_length=50, null=True, blank=True, help_text="Lucide icon name")
+    custom_icon = models.ImageField(upload_to='category_icons/', null=True, blank=True)
 
     class Meta:
         db_table = 'categories'
         verbose_name = _('Category')
         verbose_name_plural = _('Categories')
+        ordering = ['name']
     
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name, allow_unicode=True)
+        super().save(*args, **kwargs)
 
 
 class Job(models.Model):
@@ -54,7 +63,7 @@ class Job(models.Model):
     budget = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
-        validators=[MinValueValidator(0.01)]
+        validators=[MinValueValidator(Decimal('0.01'))]
     )
     deadline = models.DateTimeField()
     

@@ -20,7 +20,7 @@ const LoginPage = () => {
             await login({ email, password });
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.detail || 'Неверный email или пароль');
+            setError(err.response?.data?.error || err.response?.data?.detail || 'Неверный email или пароль');
         } finally {
             setIsSubmitting(false);
         }

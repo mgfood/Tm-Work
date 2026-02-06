@@ -72,6 +72,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     date_joined = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(null=True, blank=True)
+    
+    blocked_until = models.DateTimeField(null=True, blank=True, help_text="User is blocked until this time")
+    block_reason = models.TextField(blank=True, help_text="Reason for blocking")
 
     objects = UserManager()
 

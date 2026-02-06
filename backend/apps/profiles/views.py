@@ -75,7 +75,9 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         # Allow listing freelancers for search
-        queryset = self.get_queryset().filter(user__roles__name='FREELANCER').distinct()
+        queryset = self.get_queryset().filter(user__roles__name='FREELANCER')\
+                                      .order_by('-is_vip', '-freelancer_rating')\
+                                      .distinct()
         
         # Exclude self from list if logged in
         if request.user.is_authenticated:

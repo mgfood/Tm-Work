@@ -11,11 +11,13 @@ import chatService from '../../api/chatService';
 import reviewsService from '../../api/reviewsService';
 import ReviewCard from '../../components/reviews/ReviewCard';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 const TalentProfilePage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [profile, setProfile] = useState(null);
     const [portfolioItems, setPortfolioItems] = useState([]);
     const [reviews, setReviews] = useState([]);
@@ -109,7 +111,7 @@ const TalentProfilePage = () => {
                                             const thread = await chatService.getOrCreateThread(profile.user.id, 'PERSONAL');
                                             navigate('/chat');
                                         } catch (e) {
-                                            alert(e.response?.data?.error || 'Ошибка при создании чата');
+                                            showToast(e.response?.data?.error || 'Ошибка при создании чата', 'error');
                                         }
                                     }}
                                     className="w-full btn-primary py-4 flex items-center justify-center gap-2"

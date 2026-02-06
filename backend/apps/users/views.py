@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import status, generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -69,12 +70,34 @@ class LoginView(APIView):
             data=request.data,
             context={'request': request}
         )
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            # If it's a field error (like missing fields), wrap it in 'error' for frontend
+            error_data = serializer.errors
+            if 'error' not in error_data:
+                # Join field errors into a single string
+                msg = "; ".join([f"{k}: {', '.join(v)}" for k, v in error_data.items()])
+                error_data = {'error': msg}
+            return Response(error_data, status=status.HTTP_400_BAD_REQUEST)
         
         user = serializer.validated_data['user']
         
+        # Check if user is blocked
+        if user.blocked_until and user.blocked_until > timezone.now():
+            time_left = user.blocked_until - timezone.now()
+            hours = int(time_left.total_seconds() // 3600)
+            minutes = int((time_left.total_seconds() % 3600) // 60)
+            reason = user.block_reason or "без объяснения причин"
+            return Response({
+                'error': f'Ваш аккаунт заблокирован до {user.blocked_until.strftime("%d.%m.%Y %H:%M")}. Причина: {reason}.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        if not user.is_active:
+             return Response({
+                'error': f'Ваш аккаунт заблокирован администратором. Причина: {user.block_reason or "не указана"}.'
+            }, status=status.HTTP_403_FORBIDDEN)
+
         # Update last login
-        user.last_login = user.date_joined.__class__.now()
+        user.last_login = timezone.now()
         user.save(update_fields=['last_login'])
         
         # Generate JWT tokens
@@ -210,38 +233,193 @@ class UserViewSet(viewsets.ModelViewSet):
             'roles': [r.name for r in user.roles.all()]
         })
 
+    @action(detail=True, methods=['get'], url_path='details')
+    def details(self, request, pk=None):
+        user = self.get_object()
+        from .serializers import AdminUserDetailSerializer
+        # We only want recent 5 transactions for the detail view
+        user.recent_transactions = user.transactions.all().order_by('-created_at')[:5]
+        return Response(AdminUserDetailSerializer(user).data)
+
+    @action(detail=True, methods=['post'], url_path='adjust-balance')
+    def adjust_balance(self, request, pk=None):
+        user = self.get_object()
+        amount = request.data.get('amount')
+        reason = request.data.get('reason', 'Manual adjustment by admin')
+        
+        if amount is None:
+            return Response({'error': 'Amount is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            from decimal import Decimal
+            amount = Decimal(str(amount))
+            
+            from django.db import transaction
+            with transaction.atomic():
+                user.profile.balance += amount
+                if user.profile.balance < 0:
+                     return Response({'error': 'Balance cannot be negative'}, status=status.HTTP_400_BAD_REQUEST)
+                user.profile.save()
+
+                # Log transaction
+                from apps.transactions.models import Transaction
+                from apps.transactions.services import TransactionService
+                TransactionService.log_transaction(
+                    user=user,
+                    amount=amount,
+                    transaction_type=Transaction.Type.DEPOSIT if amount > 0 else Transaction.Type.WITHDRAWAL,
+                    description=f"Admin adjustment: {reason}"
+                )
+
+                # Log admin action
+                from apps.administration.models import log_admin_action, AdminLog
+                log_admin_action(
+                    admin=request.user,
+                    action_type=AdminLog.ActionType.ADJUST_BALANCE,
+                    target_info=f"User ID: {user.id}",
+                    comment=f"Amount: {amount}. Reason: {reason}"
+                )
+
+            return Response({'status': 'balance adjusted', 'new_balance': user.profile.balance})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='temp-block')
+    def temp_block(self, request, pk=None):
+        user = self.get_object()
+        hours = request.data.get('hours')
+        reason = request.data.get('reason', 'Temporary security block')
+        
+        if not hours:
+            return Response({'error': 'Duration (hours) is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            from django.utils import timezone
+            from datetime import timedelta
+            user.blocked_until = timezone.now() + timedelta(hours=int(hours))
+            user.block_reason = reason
+            user.save()
+            
+            from apps.administration.models import log_admin_action, AdminLog
+            log_admin_action(
+                admin=request.user,
+                action_type=AdminLog.ActionType.BLOCK_USER,
+                target_info=f"User ID: {user.id} (Temp)",
+                comment=f"Duration: {hours}h. Reason: {reason}"
+            )
+            return Response({'status': 'user temporarily blocked', 'until': user.blocked_until})
+        except ValueError:
+            return Response({'error': 'Invalid duration format'}, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=['post'], url_path='block')
     def block(self, request, pk=None):
         user = self.get_object()
         user.is_active = False
+        user.block_reason = request.data.get('reason', 'Violation of terms')
         user.save()
-        return Response({'status': 'user blocked'})
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.BLOCK_USER,
+            target_info=f"User ID: {user.id}",
+            comment=user.block_reason
+        )
+        return Response({'status': 'user permanently blocked'})
 
     @action(detail=True, methods=['post'], url_path='unblock')
     def unblock(self, request, pk=None):
         user = self.get_object()
         user.is_active = True
+        user.blocked_until = None
+        user.block_reason = ""
         user.save()
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.UNBLOCK_USER,
+            target_info=f"User ID: {user.id}",
+            comment=request.data.get('reason', 'Administrator unblocked')
+        )
         return Response({'status': 'user unblocked'})
+
+    @action(detail=True, methods=['post'], url_path='set-password')
+    def set_password(self, request, pk=None):
+        user = self.get_object()
+        new_password = request.data.get('password')
+        if not new_password:
+            return Response({'error': 'Password is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(new_password)
+        user.save()
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.UPDATE_USER,
+            target_info=f"User ID: {user.id}",
+            comment="Password reset by administrator"
+        )
+        return Response({'status': 'password updated'})
+
+    def destroy(self, request, *args, **kwargs):
+        user = self.get_object()
+        user_id = user.id
+        email = user.email
+        
+        # Check if it's not the last superuser
+        if user.is_superuser and request.user.id == user.id:
+            return Response({'error': 'Cannot delete yourself'}, status=status.HTTP_400_BAD_REQUEST)
+
+        response = super().destroy(request, *args, **kwargs)
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.BLOCK_USER, # We don't have DELETE_USER yet, use block for now or add it
+            target_info=f"User ID: {user_id} ({email})",
+            comment="User permanently deleted from system"
+        )
+        return response
 
     @action(detail=True, methods=['post'], url_path='toggle-verify')
     def toggle_verify(self, request, pk=None):
         user = self.get_object()
-        # Verify related profile
-        if hasattr(user, 'profile'):
-            user.profile.is_verified = not user.profile.is_verified
-            user.profile.save()
-            status_msg = 'verified' if user.profile.is_verified else 'unverified'
-            return Response({'status': f'User {status_msg}', 'is_verified': user.profile.is_verified})
-        return Response({'error': 'User has no profile'}, status=status.HTTP_404_NOT_FOUND)
+        # Auto-create profile if missing
+        if not hasattr(user, 'profile'):
+            from apps.profiles.models import Profile
+            Profile.objects.create(user=user)
+            
+        user.profile.is_verified = not user.profile.is_verified
+        user.profile.save()
+        status_msg = 'verified' if user.profile.is_verified else 'unverified'
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.VERIFY_USER,
+            target_info=f"User ID: {user.id}",
+            comment=f"Status: {status_msg}"
+        )
+        return Response({'status': f'User {status_msg}', 'is_verified': user.profile.is_verified})
 
     @action(detail=True, methods=['post'], url_path='toggle-vip')
     def toggle_vip(self, request, pk=None):
         user = self.get_object()
-        # Toggle VIP on related profile
-        if hasattr(user, 'profile'):
-            user.profile.is_vip = not user.profile.is_vip
-            user.profile.save()
-            status_msg = 'VIP' if user.profile.is_vip else 'Regular'
-            return Response({'status': f'User is now {status_msg}', 'is_vip': user.profile.is_vip})
-        return Response({'error': 'User has no profile'}, status=status.HTTP_404_NOT_FOUND)
+        if not hasattr(user, 'profile'):
+            from apps.profiles.models import Profile
+            Profile.objects.create(user=user)
+            
+        user.profile.is_vip = not user.profile.is_vip
+        user.profile.save()
+        status_msg = 'VIP' if user.profile.is_vip else 'Regular'
+        
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.VIP_USER,
+            target_info=f"User ID: {user.id}",
+            comment=f"Status: {status_msg}"
+        )
+        return Response({'status': f'User is now {status_msg}', 'is_vip': user.profile.is_vip})

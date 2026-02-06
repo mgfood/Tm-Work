@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FilePlus, Calendar, DollarSign, AlignLeft, AlertCircle, Save, Send, Upload, X, FileText, Trash2, List } from 'lucide-react';
 import jobsService from '../../api/jobsService';
+import { useToast } from '../../context/ToastContext';
 
 const EditJobPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
@@ -97,9 +99,10 @@ const EditJobPage = () => {
             // Optimistic update or waiting? Let's wait for server response to get ID
             const newFile = await jobsService.uploadFile(id, file);
             setFiles(prev => [...prev, newFile]);
+            showToast('Файл загружен', 'success');
         } catch (err) {
             console.error(err);
-            alert('Ошибка загрузки файла');
+            showToast('Ошибка загрузки файла', 'error');
         } finally {
             e.target.value = null; // Reset input
         }
@@ -111,9 +114,10 @@ const EditJobPage = () => {
         try {
             await jobsService.deleteFile(id, fileId);
             setFiles(prev => prev.filter(f => f.id !== fileId));
+            showToast('Файл удален', 'success');
         } catch (err) {
             console.error(err);
-            alert('Ошибка удаления файла');
+            showToast('Ошибка удаления файла', 'error');
         }
     };
 

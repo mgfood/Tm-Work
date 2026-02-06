@@ -27,14 +27,20 @@ class EscrowViewSet(viewsets.ReadOnlyModelViewSet):
     def release(self, request, pk=None):
         """Release funds to freelancer (Client only)"""
         escrow = self.get_object()
-        if escrow.payer != request.user and not request.user.is_staff:
-            return Response(
-                {'error': 'Only the payer (client) can release funds.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
         
         try:
-            EscrowService.release_funds(escrow)
+            EscrowService.release_funds(escrow, request.user)
+            
+            # Log admin action if it was staff
+            if request.user.is_staff:
+                from apps.administration.models import log_admin_action, AdminLog
+                log_admin_action(
+                    admin=request.user,
+                    action_type=AdminLog.ActionType.FORCE_ESCROW_RELEASE,
+                    target_info=f"Escrow ID: {escrow.id}",
+                    comment=request.data.get('reason', 'Forced release by admin')
+                )
+                
             return Response({'status': 'Funds released successfully.'})
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -42,15 +48,19 @@ class EscrowViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['post'], url_path='refund')
     def refund(self, request, pk=None):
         """Refund funds to client (Admin or resolution)"""
-        if not request.user.is_staff:
-            return Response(
-                {'error': 'Only admins can manually trigger refunds.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
         escrow = self.get_object()
         try:
-            EscrowService.refund_funds(escrow)
+            EscrowService.refund_funds(escrow, request.user)
+            
+            # Log admin action (refund is admin-only anyway per service logic usually)
+            from apps.administration.models import log_admin_action, AdminLog
+            log_admin_action(
+                admin=request.user,
+                action_type=AdminLog.ActionType.FORCE_ESCROW_REFUND,
+                target_info=f"Escrow ID: {escrow.id}",
+                comment=request.data.get('reason', 'Refunded by admin')
+            )
+            
             return Response({'status': 'Funds refunded successfully.'})
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

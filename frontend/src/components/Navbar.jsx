@@ -1,5 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom';
-import { Menu, X, User as UserIcon, LogOut, LayoutDashboard, Search, Users, ShieldAlert, Mail, MessageSquare, Wallet } from 'lucide-react';
+import { Menu, X, User as UserIcon, LogOut, LayoutDashboard, Search, Users, ShieldAlert, Mail, MessageSquare, Wallet, Award } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from './notifications/NotificationBell';
@@ -28,6 +28,7 @@ const Navbar = () => {
                     <Link to="/jobs" className="hover:text-primary-600 transition-colors flex items-center gap-1.5"><Search size={16} /> Найти работу</Link>
                     <Link to="/talents" className="hover:text-primary-600 transition-colors flex items-center gap-1.5"><Users size={16} /> Поиск талантов</Link>
                     <Link to="/chat" className="hover:text-primary-600 transition-colors flex items-center gap-1.5"><MessageSquare size={16} /> Сообщения</Link>
+                    <Link to="/vip" className="text-amber-600 hover:text-amber-700 transition-colors font-black flex items-center gap-1.5 animate-pulse"><Award size={16} /> VIP</Link>
                     <Link to="/contact" className="hover:text-primary-600 transition-colors flex items-center gap-1.5">Контакты</Link>
 
                     <div className="flex gap-3 ml-4 border-l pl-8 border-slate-100">
@@ -51,8 +52,13 @@ const Navbar = () => {
                                 <Link to="/jobs/create" className="btn-primary text-xs py-2 px-4 whitespace-nowrap">
                                     Создать заказ
                                 </Link>
+                                {user.is_vip && (
+                                    <Link to="/vip" className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-400 to-amber-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-200">
+                                        <Award size={12} /> VIP
+                                    </Link>
+                                )}
                                 <Link to="/profile" className="flex items-center gap-2 text-slate-700 hover:text-primary-600 transition-colors shrink-0">
-                                    <div className="w-8 h-8 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center font-bold">
+                                    <div className="w-8 h-8 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center font-bold border-2 border-primary-100">
                                         {user.first_name?.[0] || user.email[0].toUpperCase()}
                                     </div>
                                     <span className="hidden lg:inline">{user.first_name || 'Профиль'}</span>
@@ -98,6 +104,10 @@ const Navbar = () => {
                             <Link to="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-2 font-medium">
                                 <UserIcon size={20} className="text-primary-600" />
                                 Личный профиль
+                            </Link>
+                            <Link to="/vip" onClick={() => setIsOpen(false)} className="flex items-center gap-3 py-2 font-medium">
+                                <Award size={20} className="text-amber-500" />
+                                Стать VIP
                             </Link>
                             <button
                                 onClick={() => { handleLogout(); setIsOpen(false); }}

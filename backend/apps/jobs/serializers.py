@@ -12,7 +12,12 @@ class JobFileSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'icon']
+        fields = ['id', 'name', 'slug', 'icon', 'custom_icon']
+        read_only_fields = ['slug']
+        extra_kwargs = {
+            'icon': {'required': False, 'allow_null': True},
+            'custom_icon': {'required': False, 'allow_null': True}
+        }
 
 
     def validate_budget(self, value):

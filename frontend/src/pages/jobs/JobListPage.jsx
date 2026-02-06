@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Briefcase, Clock, DollarSign, MapPin, List } from 'lucide-react';
+import { Search, Filter, Briefcase, Clock, DollarSign, MapPin, List, HelpCircle } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import jobsService from '../../api/jobsService';
+
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/api\/v1\/?$/, '');
 
 const JobListPage = () => {
     const [jobs, setJobs] = useState([]);
@@ -93,8 +96,18 @@ const JobListPage = () => {
                                     <button
                                         key={cat.id}
                                         onClick={() => setSelectedCategory(cat.id)}
-                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCategory === cat.id ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-3 ${selectedCategory === cat.id ? 'bg-primary-600 text-white shadow-lg shadow-primary-200' : 'text-slate-600 hover:bg-slate-50'}`}
                                     >
+                                        <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${selectedCategory === cat.id ? 'bg-white/20' : 'bg-slate-100 text-primary-600'}`}>
+                                            {cat.custom_icon ? (
+                                                <img src={cat.custom_icon.startsWith('http') ? cat.custom_icon : `${API_BASE}${cat.custom_icon}`} alt="" className="w-5 h-5 object-contain" />
+                                            ) : (
+                                                (() => {
+                                                    const IconComp = LucideIcons[cat.icon] || HelpCircle;
+                                                    return <IconComp size={16} />;
+                                                })()
+                                            )}
+                                        </div>
                                         {cat.name}
                                     </button>
                                 ))}
@@ -134,9 +147,19 @@ const JobListPage = () => {
                             >
                                 <div className="flex-grow">
                                     <div className="flex items-center gap-3 mb-3">
-                                        <span className="px-3 py-1 bg-primary-50 text-primary-600 text-xs font-bold rounded-full uppercase tracking-wider">
+                                        <div className="flex items-center gap-2 px-3 py-1 bg-primary-50 text-primary-600 text-xs font-bold rounded-full uppercase tracking-wider">
+                                            <div className="w-4 h-4 flex items-center justify-center">
+                                                {job.category?.custom_icon ? (
+                                                    <img src={job.category.custom_icon.startsWith('http') ? job.category.custom_icon : `${API_BASE}${job.category.custom_icon}`} alt="" className="w-full h-full object-contain" />
+                                                ) : (
+                                                    (() => {
+                                                        const IconComp = LucideIcons[job.category?.icon] || HelpCircle;
+                                                        return <IconComp size={12} />;
+                                                    })()
+                                                )}
+                                            </div>
                                             {job.category?.name || 'Общее'}
-                                        </span>
+                                        </div>
                                         <span className="text-slate-400 text-sm flex items-center gap-1">
                                             <Clock size={14} />
                                             {new Date(job.created_at).toLocaleDateString('ru-RU')}

@@ -5,12 +5,24 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Skill(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=100, unique=True)
+    slug = models.CharField(max_length=100, unique=True)
 
     class Meta:
         db_table = 'skills'
         verbose_name = 'Skill'
         verbose_name_plural = 'Skills'
+        ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            import urllib.parse
+            # We allow +, #, . and other symbols by quoting or just using common sense
+            # But the user asked for C++, C#, .NET specifically.
+            # Let's just make it simple: slugify but keep these symbols.
+            from django.utils.text import slugify
+            # Custom slugify logic for skills
+            self.slug = self.name.lower().replace(' ', '-')
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -73,6 +85,45 @@ class Profile(models.Model):
         default=0.00,
         validators=[MinValueValidator(0)]
     )
+
+    @property
+    def check_vip_status(self):
+        """
+        Checks if the user has an active subscription and updates the is_vip flag.
+        This can be called during login or profile fetch for auto-sync.
+        """
+        from apps.vip.models import VIPSubscription
+        from django.utils import timezone
+        
+        is_active = VIPSubscription.objects.filter(
+            user=self.user,
+            start_date__lte=timezone.now(),
+            end_date__gte=timezone.now()
+        ).exists()
+        
+        if self.is_vip != is_active:
+            self.is_vip = is_active
+            self.save(update_fields=['is_vip'])
+        
+        return is_active
+
+    @property
+    def currently_active_subscription(self):
+        from apps.vip.models import VIPSubscription
+        from django.utils import timezone
+        sub = VIPSubscription.objects.filter(
+            user=self.user,
+            start_date__lte=timezone.now(),
+            end_date__gte=timezone.now()
+        ).first()
+
+        # Update flag as side effect when checking
+        is_active = sub is not None
+        if self.is_vip != is_active:
+            self.is_vip = is_active
+            self.save(update_fields=['is_vip'])
+            
+        return sub
 
     class Meta:
         db_table = 'profiles'

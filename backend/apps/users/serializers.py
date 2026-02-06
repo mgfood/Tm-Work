@@ -103,29 +103,46 @@ class UserLoginSerializer(serializers.Serializer):
     
     def validate(self, attrs):
         """Validate credentials and return user"""
-        email = attrs.get('email', '').lower()
+        email = attrs.get('email', '').strip().lower()
         password = attrs.get('password')
         
         if email and password:
-            user = authenticate(
-                request=self.context.get('request'),
-                username=email,
-                password=password
-            )
+            # We lookup the user manually to distinguish between "not found" 
+            # and "inactive/blocked" in the view.
+            from .models import User
+            user = User.objects.filter(email=email).first()
             
-            if not user:
-                raise serializers.ValidationError(
-                    "Unable to log in with provided credentials."
-                )
+            if not user or not user.check_password(password):
+                raise serializers.ValidationError({
+                    "error": "Неверный email или пароль."
+                })
             
-            if not user.is_active:
-                raise serializers.ValidationError(
-                    "User account is disabled."
-                )
-            
+            # Note: We return the user even if is_active=False.
+            # The LoginView will perform is_active and blocked_until checks
+            # to return a 403 Forbidden with a clear explanation.
             attrs['user'] = user
             return attrs
         else:
-            raise serializers.ValidationError(
-                "Must include 'email' and 'password'."
-            )
+            raise serializers.ValidationError({
+                "error": "Введите email и пароль."
+            })
+
+
+class AdminUserDetailSerializer(UserSerializer):
+    """Detailed user serializer for admin God Mode"""
+    from apps.transactions.serializers import TransactionSerializer
+    from apps.jobs.serializers import JobSerializer
+    from apps.reviews.serializers import ReviewSerializer
+    
+    recent_transactions = TransactionSerializer(source='transactions', many=True, read_only=True)
+    stats = serializers.SerializerMethodField()
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ['recent_transactions', 'stats']
+
+    def get_stats(self, obj):
+        return {
+            'jobs_count': obj.client_jobs.count() + obj.freelancer_jobs.count(),
+            'reviews_avg': obj.profile.freelancer_rating if hasattr(obj, 'profile') else 0,
+            'balance': obj.profile.balance if hasattr(obj, 'profile') else 0,
+        }

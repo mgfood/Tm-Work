@@ -3,26 +3,40 @@ import apiClient from './client';
 const adminService = {
     // Stats
     getStats: async () => {
-        const response = await apiClient.get('/users/stats/');
+        const response = await apiClient.get('/administration/stats/');
+        return response.data;
+    },
+
+    getLogs: async () => {
+        const response = await apiClient.get('/administration/logs/');
         return response.data;
     },
 
     // User Management
     getUsers: async (params = {}) => {
-        // Standard Django 'users' list (might need permission check on backend)
         const response = await apiClient.get('/users/', { params }).catch(() => ({
             data: { results: [] }
         }));
         return response.data;
     },
 
-    blockUser: async (userId) => {
-        const response = await apiClient.post(`/users/${userId}/block/`);
+    getUserDetails: async (userId) => {
+        const response = await apiClient.get(`/users/${userId}/details/`);
         return response.data;
     },
 
-    unblockUser: async (userId) => {
-        const response = await apiClient.post(`/users/${userId}/unblock/`);
+    adjustBalance: async (userId, data) => {
+        const response = await apiClient.post(`/users/${userId}/adjust-balance/`, data);
+        return response.data;
+    },
+
+    blockUser: async (userId, reason = '') => {
+        const response = await apiClient.post(`/users/${userId}/block/`, { reason });
+        return response.data;
+    },
+
+    unblockUser: async (userId, reason = '') => {
+        const response = await apiClient.post(`/users/${userId}/unblock/`, { reason });
         return response.data;
     },
 
@@ -33,6 +47,21 @@ const adminService = {
 
     toggleVipUser: async (userId) => {
         const response = await apiClient.post(`/users/${userId}/toggle-vip/`);
+        return response.data;
+    },
+
+    tempBlockUser: async (userId, data) => {
+        const response = await apiClient.post(`/users/${userId}/temp-block/`, data);
+        return response.data;
+    },
+
+    deleteUser: async (userId) => {
+        const response = await apiClient.delete(`/users/${userId}/`);
+        return response.data;
+    },
+
+    resetPassword: async (userId, password) => {
+        const response = await apiClient.post(`/users/${userId}/set-password/`, { password });
         return response.data;
     },
 
@@ -77,6 +106,16 @@ const adminService = {
     // Finance/Escrow audit
     getAllEscrows: async () => {
         const response = await apiClient.get('/escrow/');
+        return response.data;
+    },
+
+    forceReleaseEscrow: async (id, reason = '') => {
+        const response = await apiClient.post(`/escrow/${id}/release/`, { reason });
+        return response.data;
+    },
+
+    forceRefundEscrow: async (id, reason = '') => {
+        const response = await apiClient.post(`/escrow/${id}/refund/`, { reason });
         return response.data;
     }
 };

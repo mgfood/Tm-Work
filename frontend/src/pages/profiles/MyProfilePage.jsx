@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { useToast } from '../../context/ToastContext';
 import profilesService from '../../api/profilesService';
 import jobsService from '../../api/jobsService';
 import proposalsService from '../../api/proposalsService';
@@ -17,6 +18,7 @@ import authService from '../../api/authService';
 
 const MyProfilePage = () => {
     const { user, refreshUser } = useAuth();
+    const { showToast } = useToast();
     const [profile, setProfile] = useState(null);
     const [myJobs, setMyJobs] = useState([]);
     const [myProposals, setMyProposals] = useState([]); // Sent by me
@@ -158,9 +160,10 @@ const MyProfilePage = () => {
             setIsSaving(true);
             await profilesService.deleteAvatar();
             setProfile(prev => ({ ...prev, avatar: null }));
+            showToast('Фото профиля удалено', 'success');
             await refreshUser();
         } catch (err) {
-            setError('Ошибка при удалении фото');
+            showToast('Ошибка при удалении фото', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -170,10 +173,11 @@ const MyProfilePage = () => {
         try {
             setLoading(true);
             await authService.toggleRole(role);
+            showToast(`Роль изменена на ${role === 'CLIENT' ? 'Заказчика' : 'Фрилансера'}`, 'success');
             await refreshUser();
             window.location.reload(); // Reload to refresh permissions and UI
         } catch (err) {
-            setError('Ошибка при смене роли');
+            showToast('Ошибка при смене роли', 'error');
         } finally {
             setLoading(false);
         }
@@ -197,7 +201,7 @@ const MyProfilePage = () => {
             setMyProposals(sent);
             setReceivedProposals(received);
         } catch (err) {
-            alert('Ошибка при выполнении действия');
+            showToast('Ошибка при выполнении действия', 'error');
         } finally {
             setJobsLoading(false);
         }
@@ -222,12 +226,13 @@ const MyProfilePage = () => {
             // Refresh portfolio
             const data = await profilesService.getPortfolioItems(user.id);
             setPortfolioItems(data.results || data);
+            showToast(editingPortfolioId ? 'Работа обновлена' : 'Работа добавлена в портфолио', 'success');
             setIsPortfolioModalOpen(false);
             setEditingPortfolioId(null);
             setPortfolioFormData({ title: '', description: '', url: '', image: null });
         } catch (err) {
             console.error('Portfolio save error:', err);
-            alert('Ошибка при сохранении работы');
+            showToast('Ошибка при сохранении работы', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -238,9 +243,10 @@ const MyProfilePage = () => {
         try {
             await profilesService.deletePortfolioItem(id);
             setPortfolioItems(portfolioItems.filter(item => item.id !== id));
+            showToast('Работа удалена из портфолио', 'success');
         } catch (err) {
             console.error(err);
-            alert('Ошибка при удалении работы');
+            showToast('Ошибка при удалении работы', 'error');
         }
     };
 
@@ -255,10 +261,10 @@ const MyProfilePage = () => {
                 jobsService.getJobs({ client: user.id }),
             ]);
             setMyJobs(jobsData.results || jobsData);
-            alert('Заказ опубликован!');
+            showToast('Заказ успешно опубликован!', 'success');
         } catch (e) {
             console.error(e);
-            alert('Ошибка публикации офера');
+            showToast('Ошибка публикации офера', 'error');
         }
     };
 
@@ -267,10 +273,11 @@ const MyProfilePage = () => {
         try {
             await jobsService.deleteJob(jobId);
             setMyJobs(prev => prev.filter(j => j.id !== jobId));
+            showToast('Заказ удален', 'success');
         } catch (e) {
             console.error(e);
             const msg = e.response?.data?.detail || e.response?.data?.[0] || 'Ошибка удаления заказа';
-            alert(`Ошибка: ${msg}`);
+            showToast(`Ошибка: ${msg}`, 'error');
         }
     };
 
@@ -286,10 +293,11 @@ const MyProfilePage = () => {
             const updatedProfile = await profilesService.updateMyProfile(submissionData);
             setProfile(updatedProfile);
             setIsEditing(false);
+            showToast('Профиль успешно обновлен', 'success');
             await refreshUser();
         } catch (err) {
             console.error('Update failed', err.response?.data);
-            setError('Ошибка при сохранении профиля. Проверьте правильность введенных данных.');
+            showToast('Ошибка при сохранении профиля', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -332,9 +340,10 @@ const MyProfilePage = () => {
                                         formData.append('avatar', file);
                                         const updatedProfile = await profilesService.updateMyProfile(formData);
                                         setProfile(updatedProfile);
+                                        showToast('Фото профиля обновлено', 'success');
                                         await refreshUser();
                                     } catch (err) {
-                                        setError('Ошибка при загрузке фото');
+                                        showToast('Ошибка при загрузке фото', 'error');
                                     } finally {
                                         setIsSaving(false);
                                     }
@@ -921,8 +930,10 @@ const MyProfilePage = () => {
                                                                         if (window.confirm('Принять это предложение?')) {
                                                                             try {
                                                                                 await proposalsService.acceptProposal(proposal.id);
-                                                                                window.location.reload();
-                                                                            } catch (e) { alert('Ошибка при принятии предложения'); }
+                                                                                const sent = await chatService.getSentProposals();
+                                                                                setMyProposals(sent);
+                                                                                showToast('Предложение принято!', 'success');
+                                                                            } catch (e) { showToast('Ошибка при принятии предложения', 'error'); }
                                                                         }
                                                                     }}
                                                                     className="btn-primary py-2 px-4 text-xs flex items-center gap-1"
@@ -959,101 +970,103 @@ const MyProfilePage = () => {
             </div>
 
             {/* Portfolio Modal */}
-            {isPortfolioModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm text-left">
-                    <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h2 className="text-xl font-bold text-slate-900">
-                                {editingPortfolioId ? 'Редактировать работу' : 'Добавить новую работу'}
-                            </h2>
-                            <button
-                                onClick={() => setIsPortfolioModalOpen(false)}
-                                className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-white transition-all"
-                            >
-                                <X size={20} />
-                            </button>
+            {
+                isPortfolioModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm text-left">
+                        <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h2 className="text-xl font-bold text-slate-900">
+                                    {editingPortfolioId ? 'Редактировать работу' : 'Добавить новую работу'}
+                                </h2>
+                                <button
+                                    onClick={() => setIsPortfolioModalOpen(false)}
+                                    className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-white transition-all"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handlePortfolioSubmit} className="p-8 space-y-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2 text-left">Название проекта *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none font-bold"
+                                        placeholder="Например: Редизайн мобильного приложения"
+                                        value={portfolioFormData.title}
+                                        onChange={(e) => setPortfolioFormData({ ...portfolioFormData, title: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2 text-left">Описание</label>
+                                    <textarea
+                                        rows="3"
+                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                                        placeholder="Опишите, что вы сделали в этом проекте..."
+                                        value={portfolioFormData.description}
+                                        onChange={(e) => setPortfolioFormData({ ...portfolioFormData, description: e.target.value })}
+                                    ></textarea>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2 text-left">Ссылка на проект (URL)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="url"
+                                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
+                                            placeholder="https://example.com"
+                                            value={portfolioFormData.url}
+                                            onChange={(e) => setPortfolioFormData({ ...portfolioFormData, url: e.target.value })}
+                                        />
+                                        <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2 text-left">Изображение *</label>
+                                    <div className="relative group">
+                                        <input
+                                            type="file"
+                                            id="portfolio-image"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={(e) => setPortfolioFormData({ ...portfolioFormData, image: e.target.files[0] })}
+                                            required={!editingPortfolioId}
+                                        />
+                                        <label
+                                            htmlFor="portfolio-image"
+                                            className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-all group-hover:border-primary-400"
+                                        >
+                                            <ImageIcon className="text-slate-300 group-hover:text-primary-500 mb-3" size={32} />
+                                            <span className="text-sm font-bold text-slate-500 group-hover:text-primary-700">
+                                                {portfolioFormData.image ? portfolioFormData.image.name : 'Нажмите, чтобы загрузить фото'}
+                                            </span>
+                                            {editingPortfolioId && !portfolioFormData.image && (
+                                                <span className="text-[10px] text-slate-400 mt-2 italic">Оставьте пустым, если не хотите менять изображение</span>
+                                            )}
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="w-full btn-primary py-4 flex items-center justify-center gap-2 shadow-xl shadow-primary-600/20"
+                                >
+                                    {isSaving ? (
+                                        <Loader2 className="animate-spin" size={20} />
+                                    ) : (
+                                        <><Save size={20} /> {editingPortfolioId ? 'Обновить' : 'Опубликовать'}</>
+                                    )}
+                                </button>
+                            </form>
                         </div>
-
-                        <form onSubmit={handlePortfolioSubmit} className="p-8 space-y-6">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2 text-left">Название проекта *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none font-bold"
-                                    placeholder="Например: Редизайн мобильного приложения"
-                                    value={portfolioFormData.title}
-                                    onChange={(e) => setPortfolioFormData({ ...portfolioFormData, title: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2 text-left">Описание</label>
-                                <textarea
-                                    rows="3"
-                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-sm"
-                                    placeholder="Опишите, что вы сделали в этом проекте..."
-                                    value={portfolioFormData.description}
-                                    onChange={(e) => setPortfolioFormData({ ...portfolioFormData, description: e.target.value })}
-                                ></textarea>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2 text-left">Ссылка на проект (URL)</label>
-                                <div className="relative">
-                                    <input
-                                        type="url"
-                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
-                                        placeholder="https://example.com"
-                                        value={portfolioFormData.url}
-                                        onChange={(e) => setPortfolioFormData({ ...portfolioFormData, url: e.target.value })}
-                                    />
-                                    <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2 text-left">Изображение *</label>
-                                <div className="relative group">
-                                    <input
-                                        type="file"
-                                        id="portfolio-image"
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={(e) => setPortfolioFormData({ ...portfolioFormData, image: e.target.files[0] })}
-                                        required={!editingPortfolioId}
-                                    />
-                                    <label
-                                        htmlFor="portfolio-image"
-                                        className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-all group-hover:border-primary-400"
-                                    >
-                                        <ImageIcon className="text-slate-300 group-hover:text-primary-500 mb-3" size={32} />
-                                        <span className="text-sm font-bold text-slate-500 group-hover:text-primary-700">
-                                            {portfolioFormData.image ? portfolioFormData.image.name : 'Нажмите, чтобы загрузить фото'}
-                                        </span>
-                                        {editingPortfolioId && !portfolioFormData.image && (
-                                            <span className="text-[10px] text-slate-400 mt-2 italic">Оставьте пустым, если не хотите менять изображение</span>
-                                        )}
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={isSaving}
-                                className="w-full btn-primary py-4 flex items-center justify-center gap-2 shadow-xl shadow-primary-600/20"
-                            >
-                                {isSaving ? (
-                                    <Loader2 className="animate-spin" size={20} />
-                                ) : (
-                                    <><Save size={20} /> {editingPortfolioId ? 'Обновить' : 'Опубликовать'}</>
-                                )}
-                            </button>
-                        </form>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

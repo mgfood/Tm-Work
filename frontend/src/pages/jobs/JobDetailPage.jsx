@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useToast } from '../../context/ToastContext';
 import {
     Clock, DollarSign, User, Calendar, ArrowLeft,
     Send, AlertCircle, CheckCircle2, FileText,
@@ -18,6 +19,7 @@ const JobDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { showToast } = useToast();
 
     const [job, setJob] = useState(null);
     const [proposals, setProposals] = useState([]);
@@ -94,13 +96,14 @@ const JobDetailPage = () => {
         setAcceptingId(proposalId);
         try {
             await proposalsService.acceptProposal(proposalId);
+            showToast('Отклик принят! Проект переведен в работу.', 'success');
             // Refresh job data
             const updatedJob = await jobsService.getJobById(id);
             setJob(updatedJob);
             const updatedProposals = await proposalsService.getProposals({ job: id });
             setProposals(updatedProposals.results || updatedProposals);
         } catch (err) {
-            alert(err.response?.data?.error || 'Ошибка при принятии отклика');
+            showToast(err.response?.data?.error || 'Ошибка при принятии отклика', 'error');
         } finally {
             setAcceptingId(null);
         }
@@ -115,12 +118,13 @@ const JobDetailPage = () => {
             await apiClient.post(`/jobs/${id}/submit-work/`, {
                 content: submissionContent
             });
+            showToast('Работа успешно сдана на проверку!', 'success');
             // Refresh state
             const updatedJob = await jobsService.getJobById(id);
             setJob(updatedJob);
             setSubmissionContent('');
         } catch (err) {
-            alert(err.response?.data?.error || 'Ошибка при сдаче работы');
+            showToast(err.response?.data?.error || 'Ошибка при сдаче работы', 'error');
         } finally {
             setIsSubmittingWork(false);
         }
@@ -134,10 +138,11 @@ const JobDetailPage = () => {
         setActionLoading(true);
         try {
             await apiClient.post(`/jobs/${id}/approve-work/`);
+            showToast('Работа принята! Оплата отправлена исполнителю.', 'success');
             const updatedJob = await jobsService.getJobById(id);
             setJob(updatedJob);
         } catch (err) {
-            alert(err.response?.data?.error || 'Ошибка при одобрении работы');
+            showToast(err.response?.data?.error || 'Ошибка при одобрении работы', 'error');
         } finally {
             setActionLoading(false);
         }
@@ -147,10 +152,11 @@ const JobDetailPage = () => {
         setActionLoading(true);
         try {
             await apiClient.post(`/jobs/${id}/request-revision/`);
+            showToast('Работа отправлена на доработку', 'info');
             const updatedJob = await jobsService.getJobById(id);
             setJob(updatedJob);
         } catch (err) {
-            alert(err.response?.data?.error || 'Ошибка при возврате на доработку');
+            showToast(err.response?.data?.error || 'Ошибка при возврате на доработку', 'error');
         } finally {
             setActionLoading(false);
         }
@@ -286,7 +292,7 @@ const JobDetailPage = () => {
                                                             try {
                                                                 await chatService.getOrCreateThread(proposal.freelancer, 'JOB', job.id);
                                                                 navigate('/chat');
-                                                            } catch (e) { alert('Ошибка при создании чата'); }
+                                                            } catch (e) { showToast('Ошибка при создании чата', 'error'); }
                                                         }}
                                                         className="btn-secondary py-2 px-6 text-sm flex items-center gap-2"
                                                     >

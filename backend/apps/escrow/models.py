@@ -40,6 +40,7 @@ class Escrow(models.Model):
         db_table = 'escrow'
         verbose_name = _('Escrow')
         verbose_name_plural = _('Escrows')
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"Escrow for {self.job.title} ({self.status})"

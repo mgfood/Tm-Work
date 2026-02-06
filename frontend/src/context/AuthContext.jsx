@@ -35,6 +35,21 @@ export const AuthProvider = ({ children }) => {
         fetchUser();
     }, [fetchUser]);
 
+    // Polling for user data (balance, VIP status, etc.)
+    useEffect(() => {
+        let intervalId = null;
+
+        if (user) {
+            intervalId = setInterval(() => {
+                fetchUser();
+            }, 30000); // Update every 30 seconds
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [user, fetchUser]);
+
     const login = async (credentials) => {
         const result = await authService.login(credentials);
         await fetchUser();

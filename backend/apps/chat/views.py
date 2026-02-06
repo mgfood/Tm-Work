@@ -36,6 +36,12 @@ class MessageViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         thread_id = self.request.data.get('thread')
         thread = Thread.objects.get(id=thread_id, participants=self.request.user)
+        
+        # Prevent replying to SYSTEM threads
+        if thread.type == Thread.ThreadType.SYSTEM and not self.request.user.is_staff:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("Cannot reply to system notifications.")
+
         serializer.save(sender=self.request.user, thread=thread)
         # Update thread timestamp
         thread.save()
@@ -98,6 +104,15 @@ class AdminBroadcastView(viewsets.ViewSet):
         
         if target_type == 'ALL':
             recipients = User.objects.filter(is_active=True).exclude(id=system_user.id)
+        elif target_type == 'CLIENTS':
+            recipients = User.objects.filter(is_active=True, roles__name='CLIENT').exclude(id=system_user.id)
+        elif target_type == 'FREELANCERS':
+            recipients = User.objects.filter(is_active=True, roles__name='FREELANCER').exclude(id=system_user.id)
+        elif target_type == 'VIP':
+            recipients = User.objects.filter(is_active=True, profile__is_vip=True).exclude(id=system_user.id)
+        elif target_type == 'EMAILS':
+            emails = request.data.get('emails', [])
+            recipients = User.objects.filter(email__in=emails)
         else:
             recipients = User.objects.filter(id__in=user_ids)
 

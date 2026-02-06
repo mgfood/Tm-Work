@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FilePlus, Calendar, DollarSign, AlignLeft, AlertCircle, Save, Send, List } from 'lucide-react';
 import jobsService from '../../api/jobsService';
+import { useToast } from '../../context/ToastContext';
 
 const CreateJobPage = () => {
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const { showToast } = useToast();
 
     const [formData, setFormData] = useState({
         title: '',
@@ -58,7 +60,8 @@ const CreateJobPage = () => {
                 }
             }
 
-            navigate(`/jobs/${job.id}`, { state: { message: shouldPublish ? 'Заказ успешно опубликован!' : 'Заказ сохранен как черновик' } });
+            showToast(shouldPublish ? 'Заказ успешно опубликован!' : 'Заказ сохранен как черновик', 'success');
+            navigate(`/jobs/${job.id}`);
         } catch (err) {
             console.error(err);
             const serverError = err.response?.data;

@@ -35,7 +35,7 @@ class Transaction(models.Model):
         return f"{self.type} - {self.amount} ({self.user.email})"
 
     def save(self, *args, **kwargs):
-        if self.pk:
+        if not self._state.adding:
             raise PermissionError("Transactions are immutable and cannot be updated.")
         super().save(*args, **kwargs)
 
