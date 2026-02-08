@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom';
 import { Search, Filter, Briefcase, Clock, DollarSign, MapPin, List, HelpCircle } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import jobsService from '../../api/jobsService';
+// 1. Импортируем хук
+import { useTranslation } from 'react-i18next';
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/api\/v1\/?$/, '');
 
 const JobListPage = () => {
+    // 2. Инициализируем t
+    const { t } = useTranslation();
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -15,7 +19,6 @@ const JobListPage = () => {
     const [selectedCategory, setSelectedCategory] = useState(null);
 
     useEffect(() => {
-        // Fetch categories
         jobsService.getCategories().then(data => {
             setCategories(data.results || data);
         }).catch(console.error);
@@ -25,21 +28,21 @@ const JobListPage = () => {
         const fetchJobs = async () => {
             try {
                 setLoading(true);
-                // Only fetch published jobs for the public list
                 const data = await jobsService.getJobs({
                     status: 'PUBLISHED',
                     category: selectedCategory
                 });
                 setJobs(data.results || data);
             } catch (err) {
-                setError('Не удалось загрузить список заказов. Попробуйте позже.');
+                // 3. Перевод ошибки
+                setError(t('jobs.loadError')); 
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
         fetchJobs();
-    }, [selectedCategory]);
+    }, [selectedCategory, t]);
 
     const filteredJobs = jobs.filter(job =>
         job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,29 +53,28 @@ const JobListPage = () => {
         <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="flex flex-col md:row justify-between items-start md:items-center gap-6 mb-12">
                 <div>
-                    <h1 className="text-4xl font-bold text-slate-900 mb-2">Поиск работы</h1>
-                    <p className="text-slate-500">Найдите идеальный заказ для ваших навыков</p>
+                    <h1 className="text-4xl font-bold text-slate-900 mb-2">{t('jobs.searchTitle')}</h1>
+                    <p className="text-slate-500">{t('jobs.searchSubtitle')}</p>
                 </div>
                 <Link to="/jobs/create" className="btn-primary">
-                    Разместить заказ
+                    {t('jobs.postJob')}
                 </Link>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Sidebar Filters */}
                 <aside className="lg:col-span-1 space-y-8">
                     <div className="premium-card p-6">
                         <h3 className="font-bold mb-4 flex items-center gap-2">
                             <Filter size={18} className="text-primary-600" />
-                            Фильтры
+                            {t('common.filters')}
                         </h3>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-sm font-semibold text-slate-700 block mb-2">Поиск</label>
+                                <label className="text-sm font-semibold text-slate-700 block mb-2">{t('common.search')}</label>
                                 <div className="relative">
                                     <input
                                         type="text"
-                                        placeholder="Название или ключевые слова..."
+                                        placeholder={t('jobs.searchPlaceholder')}
                                         className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -84,13 +86,13 @@ const JobListPage = () => {
                         </div>
                         <hr className="border-slate-100" />
                         <div>
-                            <label className="text-sm font-semibold text-slate-700 block mb-2">Категории</label>
+                            <label className="text-sm font-semibold text-slate-700 block mb-2">{t('common.categories')}</label>
                             <div className="space-y-1">
                                 <button
                                     onClick={() => setSelectedCategory(null)}
                                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${!selectedCategory ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50'}`}
                                 >
-                                    Все категории
+                                    {t('categories.all')}
                                 </button>
                                 {categories.map(cat => (
                                     <button
@@ -116,7 +118,6 @@ const JobListPage = () => {
                     </div>
                 </aside>
 
-                {/* Job List */}
                 <div className="lg:col-span-3 space-y-6">
                     {loading ? (
                         <div className="space-y-6">
@@ -135,8 +136,8 @@ const JobListPage = () => {
                     ) : filteredJobs.length === 0 ? (
                         <div className="premium-card p-12 text-center">
                             <Briefcase size={48} className="mx-auto text-slate-300 mb-4" />
-                            <h3 className="text-xl font-bold text-slate-700">Заказы не найдены</h3>
-                            <p className="text-slate-500 mt-2">Попробуйте изменить параметры поиска</p>
+                            <h3 className="text-xl font-bold text-slate-700">{t('jobs.notFound')}</h3>
+                            <p className="text-slate-500 mt-2">{t('jobs.tryChangingFilters')}</p>
                         </div>
                     ) : (
                         filteredJobs.map(job => (
@@ -158,7 +159,7 @@ const JobListPage = () => {
                                                     })()
                                                 )}
                                             </div>
-                                            {job.category?.name || 'Общее'}
+                                            {job.category?.name || t('categories.general')}
                                         </div>
                                         <span className="text-slate-400 text-sm flex items-center gap-1">
                                             <Clock size={14} />
@@ -174,16 +175,16 @@ const JobListPage = () => {
                                     <div className="flex flex-wrap gap-6 text-sm font-medium text-slate-500">
                                         <span className="flex items-center gap-1.5">
                                             <DollarSign size={16} className="text-green-500" />
-                                            Бюджет: <span className="text-slate-900 font-bold">{job.budget} TMT</span>
+                                            {t('jobs.budget')}: <span className="text-slate-900 font-bold">{job.budget} TMT</span>
                                         </span>
                                         <span className="flex items-center gap-1.5">
                                             <MapPin size={16} className="text-primary-400" />
-                                            Удаленно
+                                            {t('jobs.remote')}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-end">
-                                    <span className="btn-secondary py-2 px-4 whitespace-nowrap">Подробнее</span>
+                                    <span className="btn-secondary py-2 px-4 whitespace-nowrap">{t('common.details')}</span>
                                 </div>
                             </Link>
                         ))

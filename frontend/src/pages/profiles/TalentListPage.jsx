@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Star, User, BookOpen, ShieldCheck, Briefcase } from 'lucide-react';
 import profilesService from '../../api/profilesService';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const TalentListPage = () => {
+    const { t } = useTranslation();
     const [talents, setTalents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -32,22 +34,22 @@ const TalentListPage = () => {
     return (
         <div className="max-w-7xl mx-auto px-6 py-12">
             <div className="mb-12">
-                <h1 className="text-4xl font-bold text-slate-900 mb-2">Найти таланты</h1>
-                <p className="text-slate-500 text-lg">Лучшие специалисты Туркменистана в одном месте</p>
+                <h1 className="text-4xl font-bold text-slate-900 mb-2">{t('talentList.title')}</h1>
+                <p className="text-slate-500 text-lg">{t('talentList.subtitle')}</p>
             </div>
 
             <div className="bg-white p-4 rounded-2xl shadow-premium border border-slate-100 flex flex-col md:row items-center gap-4 mb-12">
                 <div className="relative flex-grow w-full">
                     <input
                         type="text"
-                        placeholder="Поиск по имени, навыкам или био..."
+                        placeholder={t('talentList.searchPlaceholder')}
                         className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-lg"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={24} />
                 </div>
-                <button className="btn-primary py-4 px-10 w-full md:w-auto">Найти</button>
+                <button className="btn-primary py-4 px-10 w-full md:w-auto">{t('talentList.searchButton')}</button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -56,8 +58,8 @@ const TalentListPage = () => {
                 ) : filteredTalents.length === 0 ? (
                     <div className="col-span-full py-20 text-center">
                         <User size={64} className="mx-auto text-slate-200 mb-4" />
-                        <h3 className="text-2xl font-bold text-slate-700">Специалисты не найдены</h3>
-                        <p className="text-slate-500 mt-2">Попробуйте изменить поисковый запрос</p>
+                        <h3 className="text-2xl font-bold text-slate-700">{t('talentList.noTalentsFound')}</h3>
+                        <p className="text-slate-500 mt-2">{t('talentList.tryChangingSearch')}</p>
                     </div>
                 ) : (
                     filteredTalents.map(talent => (
@@ -81,19 +83,19 @@ const TalentListPage = () => {
                                 <h3 className="text-2xl font-bold text-slate-900 mb-1 group-hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
                                     {talent.user.first_name} {talent.user.last_name}
                                     {talent.is_verified && (
-                                        <ShieldCheck size={20} className="text-green-600" title="Проверенный специалист" />
+                                        <ShieldCheck size={20} className="text-green-600" title={t('talentList.verifiedSpecialist')} />
                                     )}
                                 </h3>
                             </Link>
 
                             <div className="flex items-center gap-1.5 p-2 bg-blue-50 text-blue-600 rounded-xl mb-4">
                                 <Briefcase size={16} />
-                                <span className="text-xs font-bold leading-none">{talent.completed_works_count || 0} Работ</span>
+                                <span className="text-xs font-bold leading-none">{talent.completed_works_count || 0} {t('talentList.worksCount')}</span>
                             </div>
 
                             <div className="flex items-center gap-2 text-slate-500 text-sm mb-4">
                                 <MapPin size={14} className="text-primary-400" />
-                                {talent.location || 'Туркменистан'}
+                                {talent.location || t('talentList.defaultLocation')}
                             </div>
 
                             <div className="flex items-center gap-1 text-orange-500 font-bold mb-6">
@@ -103,7 +105,7 @@ const TalentListPage = () => {
                             </div>
 
                             <p className="text-slate-600 text-sm line-clamp-3 mb-6 leading-relaxed">
-                                {talent.bio || 'Этот специалист пока не добавил описание профиля.'}
+                                {talent.bio || t('talentList.noBio')}
                             </p>
 
                             <div className="flex flex-wrap justify-center gap-2 mb-8">
@@ -123,7 +125,7 @@ const TalentListPage = () => {
                                 to={`/talents/${talent.user.id}`}
                                 className="w-full btn-secondary py-3 text-sm flex items-center justify-center gap-2"
                             >
-                                <BookOpen size={16} /> Посмотреть профиль
+                                <BookOpen size={16} /> {t('talentList.viewProfile')}
                             </Link>
                         </div>
                     ))

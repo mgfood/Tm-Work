@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // Добавьте импорт
 import {
     User, MapPin, Star, Mail, Briefcase, Clock,
     ArrowLeft, MessageSquare, ShieldCheck,
@@ -14,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
 const TalentProfilePage = () => {
+    const { t } = useTranslation(); // Инициализация хука
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -37,14 +39,14 @@ const TalentProfilePage = () => {
                 setPortfolioItems(portfolioData.results || portfolioData);
                 setReviews(reviewsData.results || reviewsData);
             } catch (err) {
-                setError('Профиль не найден');
+                setError(t('profile.notFoundError'));
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-    }, [id]);
+    }, [id, t]);
 
     if (loading) return (
         <div className="max-w-4xl mx-auto px-6 py-20 animate-pulse">
@@ -58,8 +60,8 @@ const TalentProfilePage = () => {
         <div className="max-w-4xl mx-auto px-6 py-20 text-center">
             <div className="premium-card p-12">
                 <User size={48} className="mx-auto text-slate-200 mb-4" />
-                <h2 className="text-2xl font-bold text-slate-900">Профиль не найден</h2>
-                <Link to="/talents" className="btn-primary mt-8 inline-block">К списку специалистов</Link>
+                <h2 className="text-2xl font-bold text-slate-900">{t('profile.notFoundTitle')}</h2>
+                <Link to="/talents" className="btn-primary mt-8 inline-block">{t('profile.backToList')}</Link>
             </div>
         </div>
     );
@@ -67,7 +69,7 @@ const TalentProfilePage = () => {
     return (
         <div className="max-w-5xl mx-auto px-6 py-12">
             <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-primary-600 mb-8 transition-colors font-medium">
-                <ArrowLeft size={18} /> Назад
+                <ArrowLeft size={18} /> {t('common.back')}
             </button>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -90,13 +92,13 @@ const TalentProfilePage = () => {
                         </h1>
                         <div className="flex items-center justify-center gap-2 text-slate-500 font-medium mb-6">
                             <MapPin size={16} className="text-primary-500" />
-                            {profile.location || 'Туркменистан'}
+                            {profile.location || t('profile.defaultLocation')}
                         </div>
 
                         <div className="flex items-center justify-center gap-1 text-orange-500 text-xl font-black bg-orange-50 py-3 rounded-2xl mb-8">
                             <Star size={20} fill="currentColor" />
                             <span>{profile.freelancer_rating || '5.0'}</span>
-                            <span className="text-slate-400 text-sm font-normal ml-1">({profile.freelancer_reviews_count || 0} отзывов)</span>
+                            <span className="text-slate-400 text-sm font-normal ml-1">({profile.freelancer_reviews_count || 0} {t('profile.reviewsCount')})</span>
                         </div>
 
                         <div className="space-y-3">
@@ -111,21 +113,21 @@ const TalentProfilePage = () => {
                                             const thread = await chatService.getOrCreateThread(profile.user.id, 'PERSONAL');
                                             navigate('/chat');
                                         } catch (e) {
-                                            showToast(e.response?.data?.error || 'Ошибка при создании чата', 'error');
+                                            showToast(e.response?.data?.error || t('profile.chatError'), 'error');
                                         }
                                     }}
                                     className="w-full btn-primary py-4 flex items-center justify-center gap-2"
                                 >
-                                    <MessageSquare size={20} /> Написать сообщение
+                                    <MessageSquare size={20} /> {t('profile.sendMessage')}
                                 </button>
                             ) : (
                                 <div className="p-4 bg-slate-50 text-slate-500 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 border border-slate-100">
-                                    <View size={16} /> Это ваш профиль
+                                    <View size={16} /> {t('profile.isYourProfile')}
                                 </div>
                             )}
                             {profile.is_verified && (
                                 <div className="flex items-center justify-center gap-2 text-xs text-green-600 font-bold uppercase tracking-widest pt-4">
-                                    <ShieldCheck size={16} /> Проверенный специалист
+                                    <ShieldCheck size={16} /> {t('profile.verifiedSpecialist')}
                                 </div>
                             )}
                         </div>
@@ -137,17 +139,17 @@ const TalentProfilePage = () => {
                     {/* About Section */}
                     <section>
                         <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                            <div className="w-8 h-px bg-slate-200"></div> О специалисте
+                            <div className="w-8 h-px bg-slate-200"></div> {t('profile.aboutSpecialist')}
                         </h2>
                         <p className="text-xl text-slate-700 leading-relaxed font-medium">
-                            {profile.bio || 'Этот специалист еще не заполнил раздел "О себе".'}
+                            {profile.bio || t('profile.emptyBio')}
                         </p>
                     </section>
 
                     {/* Skills Section */}
                     <section>
                         <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                            <div className="w-8 h-px bg-slate-200"></div> Профессиональные навыки
+                            <div className="w-8 h-px bg-slate-200"></div> {t('profile.professionalSkills')}
                         </h2>
                         <div className="flex flex-wrap gap-3">
                             {profile.skills?.length > 0 ? (
@@ -157,7 +159,7 @@ const TalentProfilePage = () => {
                                     </span>
                                 ))
                             ) : (
-                                <p className="text-slate-400 italic">Навыки не указаны</p>
+                                <p className="text-slate-400 italic">{t('profile.noSkills')}</p>
                             )}
                         </div>
                     </section>
@@ -166,7 +168,7 @@ const TalentProfilePage = () => {
                     {portfolioItems.length > 0 && (
                         <section>
                             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                                <div className="w-8 h-px bg-slate-200"></div> Портфолио ({portfolioItems.length})
+                                <div className="w-8 h-px bg-slate-200"></div> {t('profile.portfolio')} ({portfolioItems.length})
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                                 {portfolioItems.map(item => (
@@ -184,7 +186,7 @@ const TalentProfilePage = () => {
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="p-4 bg-white text-primary-600 rounded-full shadow-2xl hover:scale-110 transition-transform"
-                                                        title="Посмотреть проект"
+                                                        title={t('profile.viewProject')}
                                                     >
                                                         <ExternalLink size={24} />
                                                     </a>
@@ -210,35 +212,35 @@ const TalentProfilePage = () => {
                         <div className="premium-card p-8 border-l-4 border-l-primary-600">
                             <div className="flex items-center gap-4 text-slate-400 mb-4">
                                 <Briefcase size={20} />
-                                <span className="text-xs font-bold uppercase tracking-widest">Работ выполнено</span>
+                                <span className="text-xs font-bold uppercase tracking-widest">{t('profile.stats.completedWorks')}</span>
                             </div>
                             <div className="text-3xl font-black text-slate-900">{profile.completed_works_count || 0}</div>
                         </div>
                         <div className="premium-card p-8 border-l-4 border-l-green-600">
                             <div className="flex items-center gap-4 text-slate-400 mb-4">
                                 <Clock size={20} />
-                                <span className="text-xs font-bold uppercase tracking-widest">На платформе</span>
+                                <span className="text-xs font-bold uppercase tracking-widest">{t('profile.stats.onPlatform')}</span>
                             </div>
                             <div className="text-3xl font-black text-slate-900">
-                                с {new Date(profile.user.date_joined).getFullYear()}г.
+                                {t('profile.stats.since')} {new Date(profile.user.date_joined).getFullYear()}{t('profile.stats.year')}
                             </div>
                         </div>
                         {profile.hourly_rate && (
                             <div className="premium-card p-8 border-l-4 border-l-orange-600">
                                 <div className="flex items-center gap-4 text-slate-400 mb-4">
                                     <Star size={20} />
-                                    <span className="text-xs font-bold uppercase tracking-widest">Ставка</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">{t('profile.stats.rate')}</span>
                                 </div>
-                                <div className="text-3xl font-black text-slate-900">{profile.hourly_rate} TMT/ч</div>
+                                <div className="text-3xl font-black text-slate-900">{profile.hourly_rate} {t('common.currency')}</div>
                             </div>
                         )}
                         {profile.experience_years > 0 && (
                             <div className="premium-card p-8 border-l-4 border-l-blue-600">
                                 <div className="flex items-center gap-4 text-slate-400 mb-4">
                                     <View size={20} />
-                                    <span className="text-xs font-bold uppercase tracking-widest">Опыт</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">{t('profile.stats.experience')}</span>
                                 </div>
-                                <div className="text-3xl font-black text-slate-900">{profile.experience_years} лет</div>
+                                <div className="text-3xl font-black text-slate-900">{profile.experience_years} {t('profile.stats.years')}</div>
                             </div>
                         )}
                     </section>
@@ -247,7 +249,7 @@ const TalentProfilePage = () => {
                     {profile.social_links && Object.values(profile.social_links).some(v => v) && (
                         <section>
                             <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                                <div className="w-8 h-px bg-slate-200"></div> Социальные сети
+                                <div className="w-8 h-px bg-slate-200"></div> {t('profile.socialNetworks')}
                             </h2>
                             <div className="flex flex-wrap gap-4">
                                 {profile.social_links.telegram && (
@@ -276,7 +278,7 @@ const TalentProfilePage = () => {
                     {/* Reviews Section */}
                     <section>
                         <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                            <div className="w-8 h-px bg-slate-200"></div> Отзывы ({reviews.length})
+                            <div className="w-8 h-px bg-slate-200"></div> {t('profile.reviews')} ({reviews.length})
                         </h2>
                         <div className="space-y-6">
                             {reviews.length > 0 ? (
@@ -286,7 +288,7 @@ const TalentProfilePage = () => {
                             ) : (
                                 <div className="text-center py-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
                                     <Star size={32} className="mx-auto text-slate-200 mb-4" />
-                                    <p className="text-slate-400 italic">Отзывов пока нет</p>
+                                    <p className="text-slate-400 italic">{t('profile.noReviews')}</p>
                                 </div>
                             )}
                         </div>
