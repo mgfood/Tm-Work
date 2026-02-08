@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next'; // 1. Импорт
 
 const DepositModal = ({ isOpen, onClose, onDeposit }) => {
+    const { t } = useTranslation(); // 2. Хук
     const [amount, setAmount] = useState('');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -37,7 +39,7 @@ const DepositModal = ({ isOpen, onClose, onDeposit }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                 <div className="flex items-center justify-between p-6 border-b">
-                    <h2 className="text-xl font-bold text-gray-900">Пополнение баланса</h2>
+                    <h2 className="text-xl font-bold text-gray-900">{t('wallet.deposit_title')}</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
                         <X size={24} />
                     </button>
@@ -47,8 +49,8 @@ const DepositModal = ({ isOpen, onClose, onDeposit }) => {
                     {success ? (
                         <div className="flex flex-col items-center justify-center py-8 space-y-4 animate-in fade-in zoom-in duration-300">
                             <CheckCircle2 size={64} className="text-green-500" />
-                            <p className="text-lg font-medium text-gray-900">Баланс успешно пополнен!</p>
-                            <p className="text-sm text-gray-500">(Тестовый режим)</p>
+                            <p className="text-lg font-medium text-gray-900">{t('wallet.success_msg')}</p>
+                            <p className="text-sm text-gray-500">{t('wallet.test_mode')}</p>
                         </div>
                     ) : (
                         <>
@@ -73,7 +75,7 @@ const DepositModal = ({ isOpen, onClose, onDeposit }) => {
                                     type="number"
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
-                                    placeholder="Другая сумма"
+                                    placeholder={t('wallet.other_amount')}
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
                                     min="0.01"
                                     step="0.01"
@@ -94,11 +96,11 @@ const DepositModal = ({ isOpen, onClose, onDeposit }) => {
                                 disabled={loading || !amount}
                                 className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2"
                             >
-                                {loading ? <Loader2 className="animate-spin" size={20} /> : 'Оплатить'}
+                                {loading ? <Loader2 className="animate-spin" size={20} /> : t('wallet.pay_btn')}
                             </button>
 
                             <p className="text-center text-xs text-gray-400">
-                                Это тестовая транзакция. Реальные средства не списываются.
+                                {t('wallet.test_disclaimer')}
                             </p>
                         </>
                     )}

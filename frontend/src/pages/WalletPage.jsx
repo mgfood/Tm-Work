@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next'; // Добавили импорт
 import { useWallet } from '../hooks/useWallet';
 import DepositModal from '../components/wallet/DepositModal';
 import { Wallet, ArrowUpRight, ArrowDownLeft, History, Loader2, RefreshCw } from 'lucide-react';
 
 const WalletPage = () => {
+    const { t } = useTranslation(); // Инициализация перевода
     const { balance, history, loading, error, refresh, deposit } = useWallet();
     const [isDepositOpen, setIsDepositOpen] = useState(false);
 
@@ -26,9 +28,9 @@ const WalletPage = () => {
                         </div>
 
                         <div className="relative z-10">
-                            <p className="text-blue-100 font-medium mb-1">Доступный баланс</p>
+                            <p className="text-blue-100 font-medium mb-1">{t('billing.available_balance')}</p>
                             <h1 className="text-5xl font-black mb-6">
-                                {balance.toFixed(2)} <span className="text-2xl font-normal">TMT</span>
+                                {balance.toFixed(2)} <span className="text-2xl font-normal">{t('billing.currency')}</span>
                             </h1>
 
                             <div className="space-y-3">
@@ -36,10 +38,10 @@ const WalletPage = () => {
                                     onClick={() => setIsDepositOpen(true)}
                                     className="w-full py-3 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-colors shadow-lg"
                                 >
-                                    Пополнить
+                                    {t('billing.deposit')}
                                 </button>
                                 <button className="w-full py-3 bg-blue-500/30 text-white font-medium rounded-xl hover:bg-blue-500/40 transition-colors">
-                                    Вывести
+                                    {t('billing.withdraw')}
                                 </button>
                             </div>
                         </div>
@@ -47,7 +49,7 @@ const WalletPage = () => {
 
                     <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl flex gap-3 text-sm text-yellow-700">
                         <Wallet className="flex-shrink-0" size={20} />
-                        <p>Вы можете использовать баланс для оплаты заданий или продвижения своего профиля.</p>
+                        <p>{t('billing.usage_hint')}</p>
                     </div>
                 </div>
 
@@ -57,7 +59,7 @@ const WalletPage = () => {
                         <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                             <div className="flex items-center gap-2 font-bold text-gray-900">
                                 <History className="text-gray-400" size={20} />
-                                <span>История операций</span>
+                                <span>{t('billing.history_title')}</span>
                             </div>
                             <button
                                 onClick={refresh}
@@ -80,10 +82,10 @@ const WalletPage = () => {
                                             </div>
                                             <div>
                                                 <p className="font-bold text-gray-900">
-                                                    {tx.type === 'DEPOSIT' ? 'Пополнение баланса' :
-                                                        tx.type === 'WITHDRAWAL' ? 'Вывод средств' :
-                                                            tx.type === 'ESCROW_LOCK' ? 'Бронирование (Эскроу)' :
-                                                                tx.type === 'ESCROW_RELEASE' ? 'Зачисление за проект' : tx.type}
+                                                    {tx.type === 'DEPOSIT' ? t('billing.tx_deposit') :
+                                                        tx.type === 'WITHDRAWAL' ? t('billing.tx_withdrawal') :
+                                                            tx.type === 'ESCROW_LOCK' ? t('billing.tx_escrow_lock') :
+                                                                tx.type === 'ESCROW_RELEASE' ? t('billing.tx_escrow_release') : tx.type}
                                                 </p>
                                                 <p className="text-xs text-gray-500">{new Date(tx.created_at).toLocaleString()}</p>
                                             </div>
@@ -92,14 +94,14 @@ const WalletPage = () => {
                                             <span className={tx.type === 'DEPOSIT' || tx.type === 'ESCROW_RELEASE' || tx.type === 'ESCROW_REFUND' ? 'text-green-600' : 'text-red-600'}>
                                                 {tx.type === 'DEPOSIT' || tx.type === 'ESCROW_RELEASE' || tx.type === 'ESCROW_REFUND' ? '+' : '-'} {parseFloat(tx.amount).toFixed(2)}
                                             </span>
-                                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">TMT</p>
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">{t('billing.currency')}</p>
                                         </div>
                                     </div>
                                 ))
                             ) : (
                                 <div className="py-20 text-center text-gray-400">
                                     <History size={48} className="mx-auto mb-4 opacity-10" />
-                                    <p>История операций пуста</p>
+                                    <p>{t('billing.history_empty')}</p>
                                 </div>
                             )}
                         </div>
@@ -107,7 +109,7 @@ const WalletPage = () => {
                         {history.length > 0 && (
                             <div className="p-6 bg-gray-50 text-center">
                                 <button className="text-sm font-bold text-blue-600 hover:text-blue-700">
-                                    Показать все операции
+                                    {t('billing.show_all')}
                                 </button>
                             </div>
                         )}

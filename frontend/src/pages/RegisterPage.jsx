@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next'; // 1. Импортируем хук
 import { UserPlus, Mail, Lock, User, AlertCircle, Briefcase, GraduationCap } from 'lucide-react';
 
 const RegisterPage = () => {
+    const { t } = useTranslation(); // 2. Инициализируем t
     const [formData, setFormData] = useState({
         email: '',
         password: '',
         password_confirm: '',
         first_name: '',
         last_name: '',
-        roles: ['CLIENT'], // Default role
+        roles: ['CLIENT'],
     });
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,12 +38,12 @@ const RegisterPage = () => {
         setError('');
 
         if (formData.password !== formData.password_confirm) {
-            setError('Пароли не совпадают');
+            setError(t('auth.passwords_dont_match')); // Перевод ошибки
             return;
         }
 
         if (formData.roles.length === 0) {
-            setError('Пожалуйста, выберите хотя бы одну роль');
+            setError(t('auth.select_role_error')); // Перевод ошибки
             return;
         }
 
@@ -53,7 +55,7 @@ const RegisterPage = () => {
             const data = err.response?.data;
             const errorMessage = typeof data === 'object'
                 ? Object.entries(data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v[0] : v}`).join('\n')
-                : 'Ошибка при регистрации. Проверьте данные.';
+                : t('auth.registration_error'); // Общая ошибка
             setError(errorMessage);
         } finally {
             setIsSubmitting(false);
@@ -68,8 +70,8 @@ const RegisterPage = () => {
                         <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <UserPlus size={32} />
                         </div>
-                        <h2 className="text-3xl font-bold text-slate-900">Создать аккаунт</h2>
-                        <p className="text-slate-500 mt-2">Присоединяйтесь к сообществу TmWork</p>
+                        <h2 className="text-3xl font-bold text-slate-900">{t('auth.create_account')}</h2>
+                        <p className="text-slate-500 mt-2">{t('auth.join_community')}</p>
                     </div>
 
                     {error && (
@@ -82,14 +84,14 @@ const RegisterPage = () => {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Имя</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t('auth.first_name')}</label>
                                 <div className="relative">
                                     <input
                                         name="first_name"
                                         type="text"
                                         required
                                         className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all outline-none"
-                                        placeholder="Иван"
+                                        placeholder={t('auth.placeholder_first_name')}
                                         value={formData.first_name}
                                         onChange={handleChange}
                                     />
@@ -97,13 +99,13 @@ const RegisterPage = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Фамилия</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t('auth.last_name')}</label>
                                 <div className="relative">
                                     <input
                                         name="last_name"
                                         type="text"
                                         className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all outline-none"
-                                        placeholder="Иванов"
+                                        placeholder={t('auth.placeholder_last_name')}
                                         value={formData.last_name}
                                         onChange={handleChange}
                                     />
@@ -113,7 +115,7 @@ const RegisterPage = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">Email адрес</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">{t('auth.email_label')}</label>
                             <div className="relative">
                                 <input
                                     name="email"
@@ -128,9 +130,8 @@ const RegisterPage = () => {
                             </div>
                         </div>
 
-                        {/* Role Selection */}
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-3">Я хочу быть:</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-3">{t('auth.i_want_to_be')}</label>
                             <div className="grid grid-cols-2 gap-4">
                                 <button
                                     type="button"
@@ -141,7 +142,7 @@ const RegisterPage = () => {
                                         }`}
                                 >
                                     <Briefcase size={24} />
-                                    <span className="font-bold text-sm">Заказчиком</span>
+                                    <span className="font-bold text-sm">{t('auth.role_client')}</span>
                                 </button>
                                 <button
                                     type="button"
@@ -152,14 +153,14 @@ const RegisterPage = () => {
                                         }`}
                                 >
                                     <GraduationCap size={24} />
-                                    <span className="font-bold text-sm">Фрилансером</span>
+                                    <span className="font-bold text-sm">{t('auth.role_freelancer')}</span>
                                 </button>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Пароль</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t('auth.password')}</label>
                                 <div className="relative">
                                     <input
                                         name="password"
@@ -174,7 +175,7 @@ const RegisterPage = () => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Подтверждение</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t('auth.confirm_password')}</label>
                                 <div className="relative">
                                     <input
                                         name="password_confirm"
@@ -195,14 +196,14 @@ const RegisterPage = () => {
                             disabled={isSubmitting}
                             className="w-full btn-primary py-4 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            {isSubmitting ? 'Регистрация...' : 'Создать аккаунт'}
+                            {isSubmitting ? t('auth.registering') : t('auth.create_account_btn')}
                         </button>
                     </form>
 
                     <p className="text-center mt-8 text-slate-500">
-                        Уже есть аккаунт?{' '}
+                        {t('auth.already_have_account')}{' '}
                         <Link to="/login" className="text-primary-600 font-bold hover:underline">
-                            Войти
+                            {t('auth.login_link')}
                         </Link>
                     </p>
                 </div>

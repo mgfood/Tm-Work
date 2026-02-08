@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next'; // Добавлено
 import { FilePlus, Calendar, DollarSign, AlignLeft, AlertCircle, Save, Send, List } from 'lucide-react';
 import jobsService from '../../api/jobsService';
 import { useToast } from '../../context/ToastContext';
 
 const CreateJobPage = () => {
+    const { t } = useTranslation(); // Инициализация
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
@@ -37,14 +39,12 @@ const CreateJobPage = () => {
         setIsSubmitting(true);
 
         try {
-            // Validate budget
             if (!formData.budget || formData.budget <= 0) {
-                setError('Бюджет должен быть положительным числом');
+                setError(t('create_job.errors.budget_positive'));
                 setIsSubmitting(false);
                 return;
             }
 
-            // Create job (always starts as DRAFT in backend due to read_only status)
             const job = await jobsService.createJob({
                 ...formData,
                 budget: parseFloat(formData.budget)
@@ -55,22 +55,23 @@ const CreateJobPage = () => {
                     await jobsService.publishJob(job.id);
                 } catch (publishErr) {
                     console.error('Publishing failed', publishErr);
-                    setError('Заказ создан как черновик, но не был опубликован. Вы можете опубликовать его позже в панели управления.');
-                    // Don't throw, just navigate to the job page
+                    setError(t('create_job.errors.publish_failed'));
                 }
             }
 
-            showToast(shouldPublish ? 'Заказ успешно опубликован!' : 'Заказ сохранен как черновик', 'success');
+            showToast(
+                shouldPublish ? t('create_job.success.published') : t('create_job.success.drafted'),
+                'success'
+            );
             navigate(`/jobs/${job.id}`);
         } catch (err) {
             console.error(err);
             const serverError = err.response?.data;
             if (serverError) {
-                // Handle DRF validation errors
                 const msg = Object.entries(serverError).map(([key, value]) => `${key}: ${value}`).join(', ');
-                setError(`Ошибка: ${msg}`);
+                setError(`${t('create_job.errors.prefix')}: ${msg}`);
             } else {
-                setError('Не удалось создать заказ. Проверьте правильность заполнения полей.');
+                setError(t('create_job.errors.default'));
             }
         } finally {
             setIsSubmitting(false);
@@ -80,8 +81,8 @@ const CreateJobPage = () => {
     return (
         <div className="max-w-4xl mx-auto px-6 py-12">
             <div className="mb-10 text-center">
-                <h1 className="text-4xl font-bold text-slate-900 mb-2">Создать новый заказ</h1>
-                <p className="text-slate-500">Опишите задачу максимально подробно, чтобы найти лучших исполнителей</p>
+                <h1 className="text-4xl font-bold text-slate-900 mb-2">{t('create_job.title')}</h1>
+                <p className="text-slate-500">{t('create_job.subtitle')}</p>
             </div>
 
             <div className="premium-card p-10">
@@ -94,24 +95,24 @@ const CreateJobPage = () => {
 
                 <form className="space-y-8">
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Заголовок заказа</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">{t('create_job.fields.title_label')}</label>
                         <div className="relative">
                             <input
                                 name="title"
                                 type="text"
                                 required
-                                placeholder="Например: Создать логотип для интернет-магазина"
+                                placeholder={t('create_job.fields.title_placeholder')}
                                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-lg font-medium"
                                 value={formData.title}
                                 onChange={handleChange}
                             />
                             <FilePlus className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                         </div>
-                        <p className="text-xs text-slate-400 mt-2">Кратко и емко опишите суть проекта</p>
+                        <p className="text-xs text-slate-400 mt-2">{t('create_job.fields.title_hint')}</p>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Категория</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">{t('create_job.fields.category_label')}</label>
                         <div className="relative">
                             <select
                                 name="category_id"
@@ -120,7 +121,7 @@ const CreateJobPage = () => {
                                 value={formData.category_id}
                                 onChange={handleChange}
                             >
-                                <option value="">Выберите категорию</option>
+                                <option value="">{t('create_job.fields.category_placeholder')}</option>
                                 {categories.map(cat => (
                                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                                 ))}
@@ -130,13 +131,13 @@ const CreateJobPage = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Подробное описание</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">{t('create_job.fields.description_label')}</label>
                         <div className="relative">
                             <textarea
                                 name="description"
                                 rows="8"
                                 required
-                                placeholder="Опишите требования, условия и ожидания от результата..."
+                                placeholder={t('create_job.fields.description_placeholder')}
                                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none leading-relaxed"
                                 value={formData.description}
                                 onChange={handleChange}
@@ -147,7 +148,7 @@ const CreateJobPage = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Бюджет (TMT)</label>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">{t('create_job.fields.budget_label')}</label>
                             <div className="relative">
                                 <input
                                     name="budget"
@@ -162,7 +163,7 @@ const CreateJobPage = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Дедлайн (до какой даты)</label>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">{t('create_job.fields.deadline_label')}</label>
                             <div className="relative">
                                 <input
                                     name="deadline"
@@ -177,14 +178,14 @@ const CreateJobPage = () => {
                         </div>
                     </div>
 
-                    <div className="pt-10 border-t border-slate-100 flex flex-col md:row justify-end gap-4">
+                    <div className="pt-10 border-t border-slate-100 flex flex-col md:flex-row justify-end gap-4">
                         <button
                             type="button"
                             onClick={(e) => handleSubmit(e, false)}
                             disabled={isSubmitting}
                             className="px-8 py-3 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
                         >
-                            <Save size={18} /> Сохранить как черновик
+                            <Save size={18} /> {t('create_job.buttons.save_draft')}
                         </button>
                         <button
                             type="button"
@@ -192,7 +193,7 @@ const CreateJobPage = () => {
                             disabled={isSubmitting}
                             className="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2"
                         >
-                            <Send size={18} /> Опубликовать заказ
+                            <Send size={18} /> {t('create_job.buttons.publish')}
                         </button>
                     </div>
                 </form>

@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, BellOff, Check, ExternalLink, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next'; // 1. Импорт
 import notificationsService from '../../api/notificationsService';
 
 const NotificationBell = () => {
+    const { t } = useTranslation(); // 2. Подключаем t
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const dropdownRef = useRef(null);
 
+    // ... (весь код fetchNotifications, useEffect и обработчики остаются без изменений)
     const fetchNotifications = async () => {
         try {
             setLoading(true);
@@ -28,7 +31,6 @@ const NotificationBell = () => {
 
     useEffect(() => {
         fetchNotifications();
-        // Poll every 60 seconds as per requirements
         const interval = setInterval(fetchNotifications, 60000);
         return () => clearInterval(interval);
     }, []);
@@ -80,13 +82,13 @@ const NotificationBell = () => {
             {isOpen && (
                 <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-5 duration-200">
                     <div className="p-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                        <h3 className="font-bold text-slate-900">Уведомления</h3>
+                        <h3 className="font-bold text-slate-900">{t('notifications.title')}</h3>
                         {unreadCount > 0 && (
                             <button
                                 onClick={handleMarkAllRead}
                                 className="text-xs text-primary-600 hover:text-primary-700 font-bold flex items-center gap-1"
                             >
-                                <Check size={14} /> Прочитать всё
+                                <Check size={14} /> {t('notifications.mark_all_read')}
                             </button>
                         )}
                     </div>
@@ -125,7 +127,7 @@ const NotificationBell = () => {
                                                     onClick={() => setIsOpen(false)}
                                                     className="text-[10px] text-primary-600 font-bold flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
-                                                    Перейти <ExternalLink size={10} />
+                                                    {t('notifications.go_to')} <ExternalLink size={10} />
                                                 </Link>
                                             )}
                                         </div>
@@ -135,7 +137,7 @@ const NotificationBell = () => {
                         ) : (
                             <div className="p-12 text-center text-slate-400">
                                 <BellOff size={32} className="mx-auto mb-3 opacity-20" />
-                                <p className="text-sm">Нет новых уведомлений</p>
+                                <p className="text-sm">{t('notifications.empty')}</p>
                             </div>
                         )}
                     </div>
@@ -145,7 +147,7 @@ const NotificationBell = () => {
                         onClick={() => setIsOpen(false)}
                         className="block p-4 text-center text-sm font-bold text-slate-600 hover:bg-slate-50 border-t border-slate-50 transition-colors"
                     >
-                        Показать все
+                        {t('notifications.show_all')}
                     </Link>
                 </div>
             )}

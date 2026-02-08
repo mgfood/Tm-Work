@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, ArrowLeft, Send, CheckCircle } from 'lucide-react';
 import apiClient from '../api/client';
+import { useTranslation } from 'react-i18next';
 
 const ForgotPassword = () => {
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState('');
@@ -21,21 +23,19 @@ const ForgotPassword = () => {
             const response = await apiClient.post('/auth/password-reset/request/', { email });
             const targetEmail = response.data.email;
 
-            // Mask email for security/privacy in UI (e.g. u***@domain.com)
             const [userPart, domainPart] = targetEmail.split('@');
             const masked = userPart.length > 2
                 ? `${userPart[0]}***${userPart[userPart.length - 1]}@${domainPart}`
                 : `***@${domainPart}`;
 
-            setMessage(`Код подтверждения отправлен на вашу почту: ${masked}`);
+            setMessage(`${t('forgotPassword.success_message_prefix') || 'Код подтверждения отправлен на вашу почту:'} ${masked}`);
             setIsSent(true);
 
-            // Redirect to reset password page after 3 seconds to let user read
             setTimeout(() => {
                 navigate('/reset-password', { state: { email: targetEmail } });
             }, 3000);
         } catch (err) {
-            setError(err.response?.data?.error || err.response?.data?.email?.[0] || 'Ошибка при отправке запроса');
+            setError(err.response?.data?.error || err.response?.data?.email?.[0] || t('forgotPassword.error_generic'));
         } finally {
             setIsSubmitting(false);
         }
@@ -46,7 +46,7 @@ const ForgotPassword = () => {
             <div className="w-full max-w-md">
                 <Link to="/login" className="inline-flex items-center gap-2 text-slate-500 hover:text-primary-600 mb-6 transition-colors group">
                     <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                    <span className="font-medium">Вернуться к входу</span>
+                    <span className="font-medium">{t('forgotPassword.back_to_login')}</span>
                 </Link>
 
                 <div className="premium-card p-10 animate-in fade-in zoom-in duration-500">
@@ -54,8 +54,8 @@ const ForgotPassword = () => {
                         <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors duration-500 ${isSent ? 'bg-green-100 text-green-600' : 'bg-primary-100 text-primary-600'}`}>
                             {isSent ? <CheckCircle size={32} /> : <Mail size={32} />}
                         </div>
-                        <h2 className="text-3xl font-bold text-slate-900">Сброс пароля</h2>
-                        <p className="text-slate-500 mt-2">Введите ваш email, и мы отправим вам код подтверждения</p>
+                        <h2 className="text-3xl font-bold text-slate-900">{t('forgotPassword.title')}</h2>
+                        <p className="text-slate-500 mt-2">{t('forgotPassword.subtitle')}</p>
                     </div>
 
                     {error && (
@@ -73,13 +73,13 @@ const ForgotPassword = () => {
                     {!isSent ? (
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">Email адрес</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">{t('forgotPassword.email_label')}</label>
                                 <div className="relative">
                                     <input
                                         type="email"
                                         required
                                         className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all outline-none"
-                                        placeholder="name@example.com"
+                                        placeholder={t('forgotPassword.email_placeholder')}
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                     />
@@ -92,9 +92,9 @@ const ForgotPassword = () => {
                                 disabled={isSubmitting}
                                 className="w-full btn-primary py-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                {isSubmitting ? 'Отправка...' : (
+                                {isSubmitting ? '...' : (
                                     <>
-                                        <span>Отправить код</span>
+                                        <span>{t('forgotPassword.submit_button')}</span>
                                         <Send size={18} />
                                     </>
                                 )}
@@ -102,7 +102,7 @@ const ForgotPassword = () => {
                         </form>
                     ) : (
                         <div className="text-center py-4">
-                            <p className="text-slate-600 mb-4 italic">Перенаправление на страницу ввода кода...</p>
+                            <p className="text-slate-600 mb-4 italic">{t('forgotPassword.redirecting') || 'Перенаправление...'}</p>
                             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                                 <div className="bg-primary-500 h-full animate-progress-fast"></div>
                             </div>

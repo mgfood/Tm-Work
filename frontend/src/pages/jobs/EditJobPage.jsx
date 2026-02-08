@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FilePlus, Calendar, DollarSign, AlignLeft, AlertCircle, Save, Send, Upload, X, FileText, Trash2, List } from 'lucide-react';
+import { FilePlus, Calendar, DollarSign, AlignLeft, AlertCircle, Save, Send, Upload, FileText, Trash2, List } from 'lucide-react';
 import jobsService from '../../api/jobsService';
 import { useToast } from '../../context/ToastContext';
+import { useTranslation } from 'react-i18next'; // Предполагается использование i18next
 
 const EditJobPage = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { showToast } = useToast();
@@ -14,12 +16,6 @@ const EditJobPage = () => {
     const [files, setFiles] = useState([]);
     const [categories, setCategories] = useState([]);
 
-    useEffect(() => {
-        jobsService.getCategories().then(data => {
-            setCategories(data.results || data);
-        }).catch(err => console.error(err));
-    }, []);
-
     const [formData, setFormData] = useState({
         title: '',
         category_id: '',
@@ -27,6 +23,12 @@ const EditJobPage = () => {
         budget: '',
         deadline: '',
     });
+
+    useEffect(() => {
+        jobsService.getCategories().then(data => {
+            setCategories(data.results || data);
+        }).catch(err => console.error(err));
+    }, []);
 
     useEffect(() => {
         const fetchJob = async () => {
@@ -42,13 +44,13 @@ const EditJobPage = () => {
                 setFiles(data.files || []);
             } catch (err) {
                 console.error(err);
-                setError('Не удалось загрузить данные заказа');
+                setError(t('editJob.loadingError'));
             } finally {
                 setIsLoading(false);
             }
         };
         fetchJob();
-    }, [id]);
+    }, [id, t]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -62,7 +64,7 @@ const EditJobPage = () => {
 
         try {
             if (!formData.budget || formData.budget <= 0) {
-                setError('Бюджет должен быть положительным числом');
+                setError(t('editJob.budgetError'));
                 setIsSubmitting(false);
                 return;
             }
@@ -76,15 +78,19 @@ const EditJobPage = () => {
                 await jobsService.publishJob(id);
             }
 
-            navigate(`/jobs/${id}`, { state: { message: shouldPublish ? 'Заказ успешно опубликован!' : 'Изменения сохранены' } });
+            navigate(`/jobs/${id}`, { 
+                state: { 
+                    message: shouldPublish ? t('editJob.publishSuccess') : t('editJob.saveSuccess') 
+                } 
+            });
         } catch (err) {
             console.error(err);
             const serverError = err.response?.data;
             if (serverError) {
                 const msg = Object.entries(serverError).map(([key, value]) => `${key}: ${value}`).join(', ');
-                setError(`Ошибка: ${msg}`);
+                setError(`${t('common.error')}: ${msg}`);
             } else {
-                setError('Не удалось обновить заказ. Проверьте данные.');
+                setError(t('editJob.updateError'));
             }
         } finally {
             setIsSubmitting(false);
@@ -96,28 +102,27 @@ const EditJobPage = () => {
         if (!file) return;
 
         try {
-            // Optimistic update or waiting? Let's wait for server response to get ID
             const newFile = await jobsService.uploadFile(id, file);
             setFiles(prev => [...prev, newFile]);
-            showToast('Файл загружен', 'success');
+            showToast(t('editJob.fileUploadSuccess'), 'success');
         } catch (err) {
             console.error(err);
-            showToast('Ошибка загрузки файла', 'error');
+            showToast(t('editJob.fileUploadError'), 'error');
         } finally {
-            e.target.value = null; // Reset input
+            e.target.value = null;
         }
     };
 
     const handleDeleteFile = async (fileId) => {
-        if (!window.confirm('Вы уверены, что хотите удалить этот файл?')) return;
+        if (!window.confirm(t('editJob.fileDeleteConfirm'))) return;
 
         try {
             await jobsService.deleteFile(id, fileId);
             setFiles(prev => prev.filter(f => f.id !== fileId));
-            showToast('Файл удален', 'success');
+            showToast(t('editJob.fileDeleteSuccess'), 'success');
         } catch (err) {
             console.error(err);
-            showToast('Ошибка удаления файла', 'error');
+            showToast(t('editJob.fileDeleteError'), 'error');
         }
     };
 
@@ -130,8 +135,8 @@ const EditJobPage = () => {
     return (
         <div className="max-w-4xl mx-auto px-6 py-12">
             <div className="mb-10 text-center">
-                <h1 className="text-4xl font-bold text-slate-900 mb-2">Редактировать заказ</h1>
-                <p className="text-slate-500">Внесите изменения в описание или прикрепите файлы</p>
+                <h1 className="text-4xl font-bold text-slate-900 mb-2">{t('editJob.title')}</h1>
+                <p className="text-slate-500">{t('editJob.subtitle')}</p>
             </div>
 
             <div className="premium-card p-10">
@@ -144,7 +149,7 @@ const EditJobPage = () => {
 
                 <form className="space-y-8">
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Заголовок заказа</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">{t('editJob.labelTitle')}</label>
                         <div className="relative">
                             <input
                                 name="title"
@@ -159,7 +164,7 @@ const EditJobPage = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Категория</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">{t('editJob.labelCategory')}</label>
                         <div className="relative">
                             <select
                                 name="category_id"
@@ -168,7 +173,7 @@ const EditJobPage = () => {
                                 value={formData.category_id}
                                 onChange={handleChange}
                             >
-                                <option value="">Выберите категорию</option>
+                                <option value="">{t('editJob.selectCategory')}</option>
                                 {categories.map(cat => (
                                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                                 ))}
@@ -178,7 +183,7 @@ const EditJobPage = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Подробное описание</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">{t('editJob.labelDescription')}</label>
                         <div className="relative">
                             <textarea
                                 name="description"
@@ -194,7 +199,7 @@ const EditJobPage = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Бюджет (TMT)</label>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">{t('editJob.labelBudget')}</label>
                             <div className="relative">
                                 <input
                                     name="budget"
@@ -208,7 +213,7 @@ const EditJobPage = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Дедлайн (до какой даты)</label>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">{t('editJob.labelDeadline')}</label>
                             <div className="relative">
                                 <input
                                     name="deadline"
@@ -223,9 +228,8 @@ const EditJobPage = () => {
                         </div>
                     </div>
 
-                    {/* Files Section */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-4">Файлы и вложения</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-4">{t('editJob.labelFiles')}</label>
 
                         <div className="space-y-4 mb-4">
                             {files.map(file => (
@@ -271,20 +275,20 @@ const EditJobPage = () => {
                                 className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-all group"
                             >
                                 <Upload className="text-slate-400 group-hover:text-primary-500 mb-2" size={24} />
-                                <span className="text-slate-600 font-medium group-hover:text-primary-600">Нажмите, чтобы загрузить файл</span>
-                                <span className="text-xs text-slate-400 mt-1">Изображения, документы (PDF, DOCX)</span>
+                                <span className="text-slate-600 font-medium group-hover:text-primary-600">{t('editJob.uploadPlaceholder')}</span>
+                                <span className="text-xs text-slate-400 mt-1">{t('editJob.uploadHint')}</span>
                             </label>
                         </div>
                     </div>
 
-                    <div className="pt-10 border-t border-slate-100 flex flex-col md:row justify-end gap-4">
+                    <div className="pt-10 border-t border-slate-100 flex flex-col md:flex-row justify-end gap-4">
                         <button
                             type="button"
                             onClick={(e) => handleSubmit(e, false)}
                             disabled={isSubmitting}
                             className="px-8 py-3 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
                         >
-                            <Save size={18} /> Сохранить изменения
+                            <Save size={18} /> {t('editJob.btnSave')}
                         </button>
                         <button
                             type="button"
@@ -292,7 +296,7 @@ const EditJobPage = () => {
                             disabled={isSubmitting}
                             className="px-8 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/20 flex items-center justify-center gap-2"
                         >
-                            <Send size={18} /> Опубликовать сейчас
+                            <Send size={18} /> {t('editJob.btnPublish')}
                         </button>
                     </div>
                 </form>
