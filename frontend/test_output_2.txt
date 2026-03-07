@@ -1,0 +1,6 @@
+
+Running 2 tests using 1 worker
+
+Created job with ID: 34 at URL: http://localhost:3000/jobs/34
+  ✘  1 [chromium] › tests\e2e\04-proposals-escrow.spec.js:39:5 › Proposals and Escrow › Job Lifecycle - From Creation to Completion (1.1m)
+^C

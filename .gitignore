@@ -1,0 +1,66 @@
+# TmWork .gitignore (Team Friendly Version)
+# Игнорируем только тяжелое, всё остальное (включая .env) летит в гит для друга.
+
+# Тяжелые зависимости
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Виртуальное окружение
+.venv/
+venv/
+ENV/
+env/
+.python-version
+
+# Сборки
+dist/
+build/
+*.egg-info/
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Настройки IDE (можно оставить, если работаете в одном редакторе, но лучше игнорировать)
+.vscode/
+.idea/
+
+# База данных (SQLite)
+# Обычно игнорируется, но если хочешь делиться данными, можно закомментировать строку ниже
+# db.sqlite3
+
+# ВНИМАНИЕ: .env и другие настройки НЕ игнорируются, чтобы друг мог сразу запуститься
+
+# nginx
+nginx/
+
+# 1020 пароль от постгреса
+
+# Тестирование
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+coverage/
+.vitest/
+
+# В разработке(не готов к побликации в гит)
+mobile/
+
+# Медиа файлы (загружаемые пользователями)
+backend/media/
+frontend/public/uploads/
+
+# Локальные БД и кэши
+*.sqlite3
+*.db
+.coverage
+.pytest_cache/
+htmlcov/
+*.log
+
+# Специфичные для проекта
+docker-compose.yml

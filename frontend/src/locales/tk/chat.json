@@ -1,0 +1,23 @@
+{
+  "chat": {
+    "error_send": "Habar iberilende ýalňyşlyk ýüze çykdy",
+    "features": {
+      "fast": "Çalt",
+      "secure": "Howpsuz"
+    },
+    "input_placeholder": "Habar ýazyň...",
+    "no_threads": "Aktiw çat ýok",
+    "start_conversation": "Gürleşige başlaň...",
+    "tabs": {
+      "all": "Ählisi",
+      "job": "Sargytlar",
+      "personal": "Şahsy",
+      "support": "Goldaw",
+      "system": "Duýduryşlar"
+    },
+    "title": "Çatlar",
+    "welcome_subtitle_1": "Işe başlamak üçin çep tarapdan",
+    "welcome_subtitle_2": "dialog saýlaň",
+    "welcome_title": "Siziň habarlaryňyz"
+  }
+}

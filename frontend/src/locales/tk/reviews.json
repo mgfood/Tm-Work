@@ -1,0 +1,11 @@
+{
+  "reviews": {
+    "comment_label": "Siziň teswiriňiz",
+    "error_generic": "Seslenmäni ibermekde ýalňyşlyk ýüze çykdy",
+    "error_rating": "Haýyş, baha saýlaň.",
+    "form_title": "Seslenme galdyrmak",
+    "placeholder": "Hyzmatdaşlyk baradaky täsirleriňizi ýazyň...",
+    "rating_label": "Siziň bahaňyz",
+    "submit_btn": "Seslenmäni ibermek"
+  }
+}
