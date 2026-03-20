@@ -77,13 +77,6 @@ ml/datasets/
 *.jsonl
 *.parquet
 
-# Модели и веса (обученные файлы)
-ml/models/*.pkl
-ml/models/*.pth
-ml/models/*.onnx
-ml/models/*.h5
-ml/models/*.joblib
-
 # Логи обучения и кэш
 ml/runs/
 ml/logs/
