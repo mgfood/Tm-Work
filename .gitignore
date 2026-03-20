@@ -64,3 +64,32 @@ htmlcov/
 
 # Специфичные для проекта
 docker-compose.yml
+
+# --- ML Specific ---
+# Виртуальное окружение uv (если оно внутри папки ml)
+ml/.venv/
+ml/.uv/
+
+# Данные и датасеты (обычно они весят много, их нельзя в Git)
+ml/data/
+ml/datasets/
+*.csv
+*.jsonl
+*.parquet
+
+# Модели и веса (обученные файлы)
+ml/models/*.pkl
+ml/models/*.pth
+ml/models/*.onnx
+ml/models/*.h5
+ml/models/*.joblib
+
+# Логи обучения и кэш
+ml/runs/
+ml/logs/
+ml/__pycache__/
+ml/.pytest_cache/
+ml/.ipynb_checkpoints/
+
+# Конфиденциальные данные (если будут API ключи для моделей)
+ml/.env
