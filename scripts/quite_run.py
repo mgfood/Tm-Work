@@ -22,7 +22,11 @@ def main():
     frontend_dir = os.path.join(root_dir, "frontend")
     nginx_dir = os.path.join(root_dir, "nginx")
 
-    venv_python = os.path.join(root_dir, ".venv", "Scripts", "python.exe")
+    if sys.platform == "win32":
+        venv_python = os.path.join(backend_dir, ".venv", "Scripts", "python.exe")
+    else:
+        venv_python = os.path.join(backend_dir, ".venv", "bin", "python")
+
     if not os.path.exists(venv_python):
         venv_python = "python"
 
@@ -30,7 +34,9 @@ def main():
     processes = []
 
     # Флаг для запуска без окна консоли (только для Windows)
-    CREATE_NO_WINDOW = 0x08000000
+    kwargs = {}
+    if sys.platform == "win32":
+        kwargs["creationflags"] = 0x08000000
 
     print("="*60)
     print(f" Локальный IPv4: {local_ip}")
@@ -44,7 +50,7 @@ def main():
             cwd=backend_dir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            creationflags=CREATE_NO_WINDOW
+            **kwargs
         )
         processes.append(("Backend", backend_proc))
 
@@ -55,19 +61,20 @@ def main():
             shell=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            creationflags=CREATE_NO_WINDOW
+            **kwargs
         )
         processes.append(("Frontend", frontend_proc))
 
-        # 3. Nginx
-        nginx_proc = subprocess.Popen(
-            ["nginx/nginx.exe"],
-            cwd=nginx_dir,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=CREATE_NO_WINDOW
-        )
-        processes.append(("Nginx", nginx_proc))
+        # 3. Nginx (только если существует)
+        if sys.platform == "win32" and os.path.exists(os.path.join(nginx_dir, "nginx.exe")):
+            nginx_proc = subprocess.Popen(
+                ["nginx/nginx.exe"],
+                cwd=nginx_dir,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                **kwargs
+            )
+            processes.append(("Nginx", nginx_proc))
 
         print("\n [!] ВСЕ СИСТЕМЫ ЗАПУЩЕНЫ (БЕЗ ЛОГОВ)")
         print(f" Frontend: http://localhost:3000 (или http://{local_ip}:3000)")
@@ -81,8 +88,9 @@ def main():
     except KeyboardInterrupt:
         print("\n\n[*] Остановка всех процессов...")
         
-        # Специальная остановка для Nginx
-        subprocess.run("nginx/nginx.exe -s stop", cwd=nginx_dir, shell=True, capture_output=True)
+        # Специальная остановка для Nginx (на Windows)
+        if sys.platform == "win32":
+            subprocess.run("nginx/nginx.exe -s stop", cwd=nginx_dir, shell=True, capture_output=True)
         
         # Убиваем остальные процессы
         for name, proc in processes:

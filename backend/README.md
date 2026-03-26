@@ -24,19 +24,29 @@
 
 ## 🚀 Быстрый запуск
 
-### 1. Создание виртуального окружения
+### 1. Создание виртуального окружения и установка зависимостей
+
+<details>
+<summary><b>Linux / macOS</b></summary>
+
+```bash
+cd backend
+uv venv
+source .venv/bin/activate
+uv sync
+```
+</details>
+
+<details>
+<summary><b>Windows</b></summary>
 
 ```powershell
 cd backend
-python -m venv .venv
+uv venv
 .\.venv\Scripts\activate
+uv sync
 ```
-
-### 2. Установка зависимостей
-
-```powershell
-pip install -r requirements/base.txt
-```
+</details>
 
 ### 3. Настройка переменных окружения
 
@@ -50,19 +60,19 @@ DB_ENGINE=sqlite3  # или postgresql
 
 ### 4. Применение миграций
 
-```powershell
+```bash
 python manage.py migrate
 ```
 
 ### 5. Создание суперпользователя
 
-```powershell
+```bash
 python manage.py createsuperuser
 ```
 
 ### 6. Запуск сервера
 
-```powershell
+```bash
 python manage.py runserver
 ```
 

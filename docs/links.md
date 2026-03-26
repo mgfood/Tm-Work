@@ -48,6 +48,15 @@
 ## 🔧 Быстрые команды
 
 ### Backend
+
+**Linux / macOS**
+```bash
+cd backend
+source .venv/bin/activate
+python manage.py runserver
+```
+
+**Windows**
 ```powershell
 cd backend
 .\.venv\Scripts\activate
@@ -55,7 +64,8 @@ python manage.py runserver
 ```
 
 ### Frontend
-```powershell
+
+```bash
 cd frontend
 npm run dev
 ```

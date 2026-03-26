@@ -29,9 +29,9 @@ class Colors:
 
 # Поиск Python в виртуальном окружении
 if sys.platform == "win32":
-    VENV_PYTHON = os.path.join(ROOT_DIR, ".venv", "Scripts", "python.exe")
+    VENV_PYTHON = os.path.join(BACKEND_DIR, ".venv", "Scripts", "python.exe")
 else:
-    VENV_PYTHON = os.path.join(ROOT_DIR, ".venv", "bin", "python")
+    VENV_PYTHON = os.path.join(BACKEND_DIR, ".venv", "bin", "python")
 
 if not os.path.exists(VENV_PYTHON):
     VENV_PYTHON = sys.executable
@@ -81,10 +81,28 @@ def run_process(command, cwd, title, mode="TERMINAL"):
     if mode == "TERMINAL":
         # Открываем в новом окне, чтобы видеть логи
         if sys.platform == "win32":
-            subprocess.Popen(f'start "{title}" cmd /k "{command}"', cwd=cwd, shell=True)
+            # Используем /c, чтобы окно само закрывалось при остановке
+            subprocess.Popen(f'start "{title}" cmd /c "{command}"', cwd=cwd, shell=True)
         else:
-            # Linux/Mac (примерно)
-            subprocess.Popen(f'gnome-terminal -- title="{title}" -- bash -c "{command}; exec bash"', cwd=cwd, shell=True)
+            # Linux/Mac
+            import shutil
+            bash_cmd = f"{command}"
+            
+            if shutil.which("x-terminal-emulator"):
+                # Универсальный вариант для Kali/Ubuntu/Debian
+                term_cmd = f"x-terminal-emulator -e \"bash -c '{bash_cmd}'\""
+            elif shutil.which("gnome-terminal"):
+                term_cmd = f"gnome-terminal -- bash -c \"{bash_cmd}\""
+            elif shutil.which("qterminal"):
+                term_cmd = f"qterminal -e \"bash -c '{bash_cmd}'\""
+            elif shutil.which("xfce4-terminal"):
+                term_cmd = f"xfce4-terminal -e \"bash -c '{bash_cmd}'\""
+            elif sys.platform == "darwin": # Mac OS
+                term_cmd = f"osascript -e 'tell app \"Terminal\" to do script \"cd {cwd} && {command}\"'"
+            else:
+                term_cmd = f"xterm -e \"bash -c '{bash_cmd}'\""
+                
+            subprocess.Popen(term_cmd, cwd=cwd, shell=True)
         return
 
     if mode == "FILE":
@@ -96,7 +114,8 @@ def run_process(command, cwd, title, mode="TERMINAL"):
         # Запускаем и перенаправляем вывод в тот же файл (в Append режиме)
         # В Windows сложно перенаправить в уже открытый файл питоном для Popen, поэтому используем shell redirect >>
         cmd = f'{command} >> "{log_file}" 2>&1'
-        subprocess.Popen(cmd, cwd=cwd, shell=True)
+        # stdin=subprocess.DEVNULL лечит краш Vite "Error: read EIO" в фоновом режиме
+        subprocess.Popen(cmd, cwd=cwd, shell=True, stdin=subprocess.DEVNULL)
         return
 
     if mode == "SILENT":
@@ -121,8 +140,19 @@ def start_postgres():
     started = False
     
     if sys.platform != "win32":
-        print(f"{Colors.WARNING}[!] Авто-запуск Postgres работает только на Windows.{Colors.ENDC}")
-        return False
+        print(f"{Colors.CYAN}[*] Запуск PostgreSQL на Linux через systemctl...{Colors.ENDC}")
+        try:
+            res = subprocess.run("sudo systemctl start postgresql", shell=True, capture_output=True, text=True)
+            if res.returncode == 0:
+                print(f"{Colors.GREEN}[+] PostgreSQL успешно запущен!{Colors.ENDC}")
+                time.sleep(3)
+                return True
+            else:
+                print(f"{Colors.FAIL}[-] Не удалось запустить PostgreSQL. Ошибка: {res.stderr}{Colors.ENDC}")
+                return False
+        except Exception as e:
+            print(f"{Colors.FAIL}[-] Ошибка при запуске: {str(e)}{Colors.ENDC}")
+            return False
 
     for service in services:
         try:
@@ -150,6 +180,14 @@ def start_postgres():
 def start_dev(mode):
     print(f"\n{Colors.CYAN}[*] Запуск сервисов...{Colors.ENDC}")
     
+    if mode == "FILE":
+        # Убираем буферизацию вывода (стартовые сообщения Django появятся сразу)
+        os.environ["PYTHONUNBUFFERED"] = "1"
+        # Отключаем цвета (ANSI-коды), чтобы файл читался без "крякозябр"
+        os.environ["NO_COLOR"] = "1"
+        os.environ["FORCE_COLOR"] = "0"
+        os.environ["DJANGO_COLORS"] = "nocolor"
+        
     # 1. Проверка БД
     if not check_postgres():
         print(f"{Colors.WARNING}[!] PostgreSQL не обнаружен на порту 5432. Пробую запустить...{Colors.ENDC}")
@@ -189,14 +227,18 @@ def start_docker():
 def stop_all():
     print(f"\n{Colors.WARNING}[*] Остановка процессов...{Colors.ENDC}")
     if sys.platform == "win32":
-        os.system("taskkill /F /IM node.exe /T")
-        os.system("taskkill /F /IM python.exe /T")
-        os.system("taskkill /F /IM nginx.exe /T")
-        print(f"{Colors.GREEN}[+] Все процессы убиты (Node, Python, Nginx).{Colors.ENDC}")
+        os.system("taskkill /F /IM node.exe /T >nul 2>&1")
+        os.system("taskkill /F /IM nginx.exe /T >nul 2>&1")
+        os.system('wmic process where "commandline like \'%manage.py runserver%\'" call terminate >nul 2>&1')
+        print(f"{Colors.GREEN}[+] Все процессы убиты (Node, Django, Nginx).{Colors.ENDC}")
     else:
-        os.system("pkill -f python")
-        os.system("pkill -f node")
-        os.system("pkill -f nginx")
+        # Убиваем только сервера, предотвращая `pkill python` от убийства самого run.py
+        os.system("pkill -f 'manage.py runserver' >/dev/null 2>&1")
+        os.system("pkill -f 'npm run dev' >/dev/null 2>&1")
+        os.system("pkill -f 'vite' >/dev/null 2>&1")
+        os.system("pkill node >/dev/null 2>&1")
+        os.system("pkill nginx >/dev/null 2>&1")
+        print(f"{Colors.GREEN}[+] Серверы проектов остановлены.{Colors.ENDC}")
 
 def tools_menu():
     while True:
@@ -217,7 +259,7 @@ def tools_menu():
             input("\nНажмите Enter...")
         elif choice == "3":
             print("Установка Python пакетов...")
-            os.system(f'"{VENV_PYTHON}" -m pip install -r requirements.txt', cwd=BACKEND_DIR)
+            os.system('uv sync', cwd=BACKEND_DIR)
             print("Установка Node пакетов...")
             os.system('npm install', cwd=FRONTEND_DIR)
             input("\nГотово. Нажмите Enter...")

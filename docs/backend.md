@@ -80,15 +80,30 @@
 Скопируйте `.env.example` в `.env` и настройте переменные.
 Ключевая настройка для локальной разработки:
 ```bash
-DB_ENGINE=sqlite3  # Чтобы не устанавливать PostgreSQL на Windows
+DB_ENGINE=sqlite3  # Позволяет локально запускать без PostgreSQL (удобно для быстрого старта)
 ```
 
-### 2. Установка
+### 2. Установка (через uv)
+
+<details>
+<summary><b>Linux / macOS</b></summary>
+
 ```bash
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r backend/requirements/base.txt
+uv venv
+source .venv/bin/activate
+uv sync
 ```
+</details>
+
+<details>
+<summary><b>Windows</b></summary>
+
+```powershell
+uv venv
+.\.venv\Scripts\activate
+uv sync
+```
+</details>
 
 ### 3. База данных
 ```bash
@@ -98,7 +113,7 @@ python backend/manage.py createsuperuser
 ```
 
 ### 4. Документация (Swagger)
-Запустите сервер и перейдите по адресу:
+Запустите сервер (`python backend/manage.py runserver`) и перейдите по адресу:
 [http://127.0.0.1:8000/api/schema/swagger-ui/](http://127.0.0.1:8000/api/schema/swagger-ui/)
 Здесь можно тестировать API без Postman.
 

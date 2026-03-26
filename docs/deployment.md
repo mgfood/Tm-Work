@@ -13,9 +13,9 @@
 
 > ⚠️ **Важно:** Перед запуском backend всегда активируйте виртуальное окружение!
 
-```powershell
-cd f:\TmWork\backend
-.\.venv\Scripts\activate
+```bash
+cd backend
+source .venv/bin/activate  # Для Windows: .\.venv\Scripts\activate
 ```
 
 ---
@@ -62,10 +62,10 @@ npm install -g localtunnel
 ### Пошаговая инструкция
 
 #### 1️⃣ Терминал 1: Запуск Backend
-```powershell
-cd f:\TmWork\backend
+```bash
+cd backend
 # Активация виртуального окружения
-.\.venv\Scripts\activate
+source .venv/bin/activate  # Для Windows: .\.venv\Scripts\activate
 # Запуск Django сервера
 python manage.py runserver
 ```
@@ -88,7 +88,7 @@ https://smart-cats-jump.loca.lt
 
 #### 3️⃣ Настройка Frontend
 
-Откройте файл `f:\TmWork\frontend\.env` и вставьте полученную ссылку:
+Откройте файл `frontend/.env` и вставьте полученную ссылку:
 
 ```env
 VITE_API_URL=https://smart-cats-jump.loca.lt
@@ -97,15 +97,15 @@ VITE_API_URL=https://smart-cats-jump.loca.lt
 ---
 
 #### 4️⃣ Терминал 3: Запуск Frontend
-```powershell
-cd f:\TmWork\frontend
+```bash
+cd frontend
 npm run dev
 ```
 
 ---
 
 #### 5️⃣ Терминал 4: Публикация Frontend
-```powershell
+```bash
 lt --port 3000
 ```
 
@@ -144,7 +144,7 @@ https://cool-site.loca.lt
 
 #### 1️⃣ Терминал 1: Запуск Backend
 ```powershell
-cd f:\TmWork\backend
+cd backend
 # Активация виртуального окружения
 .\.venv\Scripts\activate
 # Запуск Django сервера
@@ -169,7 +169,7 @@ Forwarding    https://a1b2-c3d4.ngrok-free.app -> http://localhost:8000
 
 #### 3️⃣ Настройка Frontend
 
-Откройте файл `f:\TmWork\frontend\.env` и вставьте ссылку:
+Откройте файл `frontend/.env` и вставьте ссылку:
 
 ```env
 VITE_API_URL=https://a1b2-c3d4.ngrok-free.app
@@ -179,7 +179,7 @@ VITE_API_URL=https://a1b2-c3d4.ngrok-free.app
 
 #### 4️⃣ Терминал 3: Запуск Frontend
 ```powershell
-cd f:\TmWork\frontend
+cd frontend
 npm run dev
 ```
 
@@ -190,12 +190,12 @@ npm run dev
 > ⚠️ **Внимание:** На бесплатном тарифе ngrok можно держать только **один активный туннель**. Вам понадобится второй аккаунт или комбинация с Localtunnel.
 
 **Вариант А: Второй аккаунт ngrok**
-```powershell
+```bash
 ngrok http 3000
 ```
 
 **Вариант Б: Localtunnel для фронтенда**
-```powershell
+```bash
 lt --port 3000
 ```
 
@@ -292,10 +292,10 @@ CORS_ALLOW_ALL_ORIGINS = True  # Только для разработки!
 
 ## 🎯 Типичный workflow
 
-```powershell
+```bash
 # Terminal 1
-cd f:\TmWork\backend
-.\.venv\Scripts\activate
+cd backend
+source .venv/bin/activate  # Для Windows: .\.venv\Scripts\activate
 python manage.py runserver
 
 # Terminal 2
@@ -303,7 +303,7 @@ lt --port 8000
 # Копируем ссылку → обновляем .env
 
 # Terminal 3
-cd f:\TmWork\frontend
+cd frontend
 npm run dev
 
 # Terminal 4
