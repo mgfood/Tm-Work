@@ -413,7 +413,8 @@
     "show": "Görkez",
     "until": "Çenli",
     "user": "Ulanyjy",
-    "view": "Görmek"
+    "view": "Görmek",
+    "confirm_action": "Hereketi tassyklamak"
   },
   "confirmations": {
     "acceptProposal": "Siz dogrudan hem bu jogaby kabul etmek isleýärsiňizmi? Bu sargydyň býujetini Escrow ulgamynda bloklar.",
