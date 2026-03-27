@@ -55,6 +55,8 @@ const CategoriesTab = () => {
         e.preventDefault();
         const formData = new FormData();
         formData.append('name', e.target.name.value);
+        formData.append('name_ru', e.target.name_ru.value);
+        formData.append('name_tk', e.target.name_tk.value);
 
         if (customIconFile) {
             formData.append('custom_icon', customIconFile);
@@ -172,8 +174,19 @@ const CategoriesTab = () => {
                 <h3 className="font-bold text-lg mb-4">{t('admin.categories_mgmt.add_title')}</h3>
                 <form onSubmit={handleCreateCategory} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">{t('admin.categories_mgmt.name_label')}</label>
-                        <input data-testid="category-name-input" name="name" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-primary-100 font-bold" placeholder={t('admin.categories_mgmt.name_placeholder')} />
+                        <label className="block text-sm font-bold text-slate-700 mb-1">{t('admin.categories_mgmt.name_label')} (Core)</label>
+                        <input data-testid="category-name-input" name="name" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-primary-100 font-bold" placeholder="Technical name..." />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Название (RU)</label>
+                            <input name="name_ru" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-primary-100" placeholder="Русское название..." />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Ady (TK)</label>
+                            <input name="name_tk" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-primary-100" placeholder="Türkmen ady..." />
+                        </div>
                     </div>
 
                     <div className="space-y-3">

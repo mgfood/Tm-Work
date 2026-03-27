@@ -631,6 +631,7 @@
     "stats": {
       "jobs": "Işler",
       "safe": "Ygtybarly",
+      "completed": "Tamamlanan işler",
       "talents": "Hünärmenler"
     },
     "welcome_guest": "Indi Türkmenistanda",
@@ -895,6 +896,7 @@
     "modal_btn_cancel": "Goýbolsun et",
     "modal_btn_confirm": "Hawa, aktiwleşdir",
     "modal_confirm_text": "<1>{{name}}</1> planyny <2>{{months}} aý</2> möhlet bilen <3>{{price}} TMT</3> bahasyna aktiwleşdirmelimi?",
+    "modal_confirm_text_v2": "{{name}} planyny {{months}} aý möhlet bilen {{price}} TMT bahasyna aktiwleşdirmelimi?",
     "modal_confirm_title": "Satyn almagy tassyklamak",
     "per_month": "TMT / Aý",
     "plan_benefit": "{{percentage}}% peýda",

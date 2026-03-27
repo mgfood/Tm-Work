@@ -24,6 +24,15 @@ class AdministrationViewSet(viewsets.ViewSet):
         """
         return Response(AnalyticsService.get_dashboard_stats())
 
+    @action(detail=False, methods=['get'], url_path='revenue')
+    def get_revenue(self, request):
+        """
+        Stats focused on revenue for the RevenueTab.
+        """
+        stats = AnalyticsService.get_dashboard_stats()
+        # Return just the summary part which contains the revenue fields
+        return Response(stats['summary'])
+
     @action(detail=False, methods=['get'], url_path='logs')
     def get_logs(self, request):
         """

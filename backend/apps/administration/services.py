@@ -7,6 +7,8 @@ from apps.users.models import User
 from apps.transactions.models import Transaction
 from apps.jobs.models import Job
 from apps.escrow.models import Escrow
+from apps.vip.models import GlobalSettings
+import decimal
 
 class AnalyticsService:
     @staticmethod
@@ -37,6 +39,41 @@ class AnalyticsService:
         completed_jobs = Job.objects.filter(status=Job.Status.COMPLETED).count()
         completion_rate = (completed_jobs / total_jobs * 100) if total_jobs > 0 else 0
 
+        # 4. Revenue calculation
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        today_revenue = Transaction.objects.filter(
+            created_at__gte=today_start,
+            type__in=[Transaction.Type.FEE, Transaction.Type.PURCHASE_VIP]
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        # Amount in PURCHASE_VIP is negative (deduction from user), so we take absolute for revenue
+        # Wait, if amount is negative in transaction, we should be careful.
+        # Actually, TransactionService.process_transaction uses amount as is.
+        # In VIP buy, amount is -total_price. So revenue = abs(amount).
+        
+        # Let's recalibrate: Revenue = Sum of abs(amount) for FEE and PURCHASE_VIP
+        # Since we use amount=-total_price, we sum the negative values and multiply by -1.
+        
+        month_revenue_raw = Transaction.objects.filter(
+            created_at__gte=last_30_days,
+            type__in=[Transaction.Type.FEE, Transaction.Type.PURCHASE_VIP]
+        ).aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        # platform_settings = GlobalSettings.get_settings()
+        total_revenue = GlobalSettings.get_settings().total_revenue
+        
+        # 5. System balance (liquid assets in system wallet)
+        system_balance = total_revenue # Fallback
+        try:
+            from django.conf import settings as django_settings
+            system_email = getattr(django_settings, 'SYSTEM_WALLET_EMAIL', 'system@tmwork.tm')
+            system_user = User.objects.filter(email=system_email).first()
+            if system_user and hasattr(system_user, 'profile'):
+                system_balance = system_user.profile.balance
+        except Exception:
+            pass
+
         return {
             'trends': {
                 'registrations': list(registrations),
@@ -47,6 +84,10 @@ class AnalyticsService:
                 'total_users': User.objects.count(),
                 'active_jobs': Job.objects.filter(status=Job.Status.IN_PROGRESS).count(),
                 'total_escrow': Escrow.objects.filter(status=Escrow.Status.FUNDS_LOCKED).aggregate(Sum('amount'))['amount__sum'] or 0,
+                'total_revenue': float(total_revenue),
+                'today_revenue': float(abs(today_revenue)),
+                'month_revenue': float(abs(month_revenue_raw)),
+                'system_balance': float(system_balance)
             }
         }
 
@@ -66,6 +107,8 @@ class AnalyticsService:
         escrow_total = Escrow.objects.filter(status='FUNDS_LOCKED').aggregate(Sum('amount'))['amount__sum'] or 0
         freelancers_count = User.objects.filter(roles__name='FREELANCER').count()
         
+        platform_settings = GlobalSettings.get_settings()
+        
         return {
             'total_users': total_users,
             'active_jobs': active_jobs,
@@ -74,5 +117,5 @@ class AnalyticsService:
             'total_volume': f"{total_volume} TMT",
             'avg_budget': f"{round(avg_budget, 2)} TMT",
             'freelancers_count': freelancers_count,
-            'platform_fee_total': "0 TMT"
+            'platform_fee_total': f"{platform_settings.total_revenue} TMT"
         }

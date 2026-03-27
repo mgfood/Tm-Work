@@ -20,6 +20,7 @@ import JobListPage from './pages/jobs/JobListPage';
 import JobDetailPage from './pages/jobs/JobDetailPage';
 import CreateJobPage from './pages/jobs/CreateJobPage';
 import EditJobPage from './pages/jobs/EditJobPage';
+import CategoriesPage from './pages/jobs/CategoriesPage';
 
 // Profile Pages
 import TalentListPage from './pages/profiles/TalentListPage';
@@ -71,6 +72,7 @@ function AppContent() {
 
                     {/* Job Routes */}
                     <Route path="/jobs" element={<JobListPage />} />
+                    <Route path="/categories" element={<CategoriesPage />} />
                     <Route path="/jobs/create" element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>} />
                     <Route path="/jobs/:id/edit" element={<ProtectedRoute><EditJobPage /></ProtectedRoute>} />
                     <Route path="/jobs/:id" element={<JobDetailPage />} />

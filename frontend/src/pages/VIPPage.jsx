@@ -42,13 +42,14 @@ const VIPPage = () => {
             return;
         }
 
-        if (user.is_vip) {
+        if (user.is_vip && user.active_plan_id === plan.id) {
             showToast(t('vip.already_active'), 'info');
             return;
         }
 
-        if (user.balance < plan.total_price) {
-            showToast(t('vip.insufficient_funds', { amount: Math.round(plan.total_price - user.balance) }), 'error');
+        if (parseFloat(user.balance) < parseFloat(plan.total_price)) {
+            const needed = Math.ceil(parseFloat(plan.total_price) - parseFloat(user.balance));
+            showToast(t('vip.insufficient_funds', { amount: needed }), 'error');
             return;
         }
 
@@ -62,12 +63,14 @@ const VIPPage = () => {
         try {
             setShowConfirmModal(false);
             setBuying(selectedPlan.id);
-            await vipService.buyPlan(selectedPlan.id);
+            const response = await vipService.buyPlan(selectedPlan.id);
             await refreshUser();
             showToast(t('vip.success_message'), 'success');
-            navigate('/dashboard');
+            // Small delay to let user see success before redirect or just stay and see updated status
+            setTimeout(() => navigate('/dashboard'), 1500);
         } catch (err) {
-            showToast(err.response?.data?.error || t('vip.error_purchase'), 'error');
+            const errorMsg = err.response?.data?.error || t('vip.error_purchase');
+            showToast(errorMsg, 'error');
         } finally {
             setBuying(null);
             setSelectedPlan(null);
@@ -91,9 +94,16 @@ const VIPPage = () => {
             <section className="relative py-20 bg-slate-900 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 to-transparent"></div>
                 <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-primary-400 font-bold text-sm mb-6 border border-white/5">
-                        <Award size={16} /> {t('vip.hero_badge')}
-                    </div>
+                    {user?.is_vip && user?.vip_until ? (
+                        <div className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500/20 backdrop-blur-md rounded-2xl text-amber-400 font-bold text-sm mb-8 border border-amber-500/30 animate-bounce">
+                            <Crown size={20} /> 
+                            {t('home.welcome_user')}, VIP {t('common.until')} {new Date(user.vip_until).toLocaleDateString()}
+                        </div>
+                    ) : (
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-primary-400 font-bold text-sm mb-6 border border-white/5">
+                             <Award size={16} /> {t('vip.hero_badge')}
+                        </div>
+                    )}
                     <h1 className="text-4xl md:text-6xl font-black text-white mb-6">
                         <Trans i18nKey="vip.hero_title">
                             Подключите <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-amber-400">Премиум</span> возможности
@@ -193,15 +203,28 @@ const VIPPage = () => {
                                         </div>
                                         <button
                                             onClick={() => initiatePurchase(plan)}
-                                            disabled={buying === plan.id || user?.is_vip}
-                                            className={`w-full py-5 rounded-2xl font-black text-lg transition-all shadow-xl ${user?.is_vip
-                                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
+                                            disabled={buying === plan.id || (user?.is_vip && user?.active_plan_id === plan.id)}
+                                            className={`w-full py-5 rounded-2xl font-black text-lg transition-all shadow-xl flex items-center justify-center gap-2 ${
+                                                user?.active_plan_id === plan.id
+                                                ? 'bg-green-50 text-green-600 border-2 border-green-200 shadow-none cursor-default'
+                                                : buying === plan.id
+                                                ? 'bg-slate-100 text-slate-400 cursor-wait'
+                                                : user?.is_vip
+                                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'
                                                 : plan.discount_percentage > 0
-                                                    ? 'bg-primary-600 text-white shadow-primary-200 hover:bg-primary-700'
-                                                    : 'bg-slate-900 text-white hover:bg-slate-800'
-                                                }`}
+                                                    ? 'bg-primary-600 text-white shadow-primary-200 hover:bg-primary-700 active:scale-95'
+                                                    : 'bg-slate-900 text-white hover:bg-slate-800 active:scale-95'
+                                            }`}
                                         >
-                                            {buying === plan.id ? t('vip.btn_activating') : (user?.is_vip ? t('vip.btn_active') : t('vip.btn_activate'))}
+                                            {buying === plan.id ? (
+                                                <div className="w-6 h-6 border-4 border-slate-300 border-t-primary-600 rounded-full animate-spin" />
+                                            ) : user?.active_plan_id === plan.id ? (
+                                                <><Check size={20} /> {t('vip.btn_active')}</>
+                                            ) : user?.is_vip ? (
+                                                t('vip.btn_active')
+                                            ) : (
+                                                t('vip.btn_activate')
+                                            )}
                                         </button>
                                     </div>
                                 </div>
@@ -239,9 +262,11 @@ const VIPPage = () => {
                             </div>
                             <h3 className="text-2xl font-black text-slate-900 mb-4">{t('vip.modal_confirm_title')}</h3>
                             <p className="text-slate-600 mb-8 leading-relaxed">
-                                <Trans i18nKey="vip.modal_confirm_text" values={{ name: selectedPlan.name, months: selectedPlan.months, price: selectedPlan.total_price }}>
-                                    Активировать план <span className="font-black text-primary-600">{{name}}</span> на <span className="font-bold">{{months}} мес.</span> за <span className="font-black">{{price}} TMT</span>?
-                                </Trans>
+                                {selectedPlan && t('vip.modal_confirm_text_v2', { 
+                                    name: selectedPlan.name, 
+                                    months: selectedPlan.months, 
+                                    price: selectedPlan.total_price 
+                                })}
                             </p>
 
                             <div className="flex flex-col gap-3">

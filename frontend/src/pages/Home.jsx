@@ -1,11 +1,54 @@
-import { ArrowRight, Shield, Zap, Search, ChevronRight, LayoutDashboard, Briefcase, Plus, Users, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, Shield, Zap, Search, ChevronRight, LayoutDashboard, Briefcase, Plus, Users, Star, HelpCircle } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTranslation } from 'react-i18next'; // Добавили импорт
+import { useTranslation } from 'react-i18next';
+import jobsService from '../api/jobsService';
+import profilesService from '../api/profilesService';
 
 const Home = () => {
     const { user } = useAuth();
-    const { t } = useTranslation(); // Инициализация переводчика
+    const { t, i18n } = useTranslation();
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({ total_freelancers: null, total_jobs: null, total_completed: null });
+    const [freelancers, setFreelancers] = useState([]);
+    const [recentJobs, setRecentJobs] = useState([]);
+
+    const API_BASE = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/api\/v1\/?$/, '');
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [catData, statsData, profilesData, jobsData] = await Promise.all([
+                    jobsService.getCategories(),
+                    jobsService.getGlobalStats(),
+                    profilesService.getProfiles({ page_size: 3, role: 'FREELANCER' }),
+                    jobsService.getJobs({ status: 'PUBLISHED', page_size: 3, ordering: '-created_at' }),
+                ]);
+                const categoriesArray = Array.isArray(catData.results) ? catData.results : (Array.isArray(catData) ? catData : []);
+                setCategories(categoriesArray.slice(0, 8));
+                setStats(statsData);
+                const profilesArray = Array.isArray(profilesData.results) ? profilesData.results : (Array.isArray(profilesData) ? profilesData : []);
+                setFreelancers(profilesArray.slice(0, 3));
+                const jobsArray = Array.isArray(jobsData.results) ? jobsData.results : (Array.isArray(jobsData) ? jobsData : []);
+                setRecentJobs(jobsArray.slice(0, 3));
+            } catch (err) {
+                console.error("Failed to load home data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const getCategoryName = (cat) => {
+        const lang = i18n.language;
+        if (lang === 'tk' && cat.name_tk) return cat.name_tk;
+        if (lang === 'ru' && cat.name_ru) return cat.name_ru;
+        return cat.name; // Fallback to core name
+    };
 
     return (
         <div className="bg-slate-50">
@@ -54,19 +97,31 @@ const Home = () => {
                         </Link>
                     </div>
 
-                    {/* Stats placeholder */}
+                    {/* Real Stats */}
                     <div className="mt-24 flex flex-wrap justify-center gap-16 lg:gap-24">
                         <div className="text-center">
-                            <div className="text-4xl md:text-5xl font-black text-slate-900 mb-2">1000+</div>
+                            <div className="text-4xl md:text-5xl font-black text-slate-900 mb-2">
+                                {stats.total_freelancers !== null ? stats.total_freelancers : (
+                                    <span className="inline-block w-20 h-10 bg-slate-200 rounded-xl animate-pulse" />
+                                )}
+                            </div>
                             <div className="text-sm md:text-base uppercase tracking-wider font-semibold text-slate-500">{t('home.stats.talents')}</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-4xl md:text-5xl font-black text-slate-900 mb-2">500+</div>
+                            <div className="text-4xl md:text-5xl font-black text-slate-900 mb-2">
+                                {stats.total_jobs !== null ? stats.total_jobs : (
+                                    <span className="inline-block w-20 h-10 bg-slate-200 rounded-xl animate-pulse" />
+                                )}
+                            </div>
                             <div className="text-sm md:text-base uppercase tracking-wider font-semibold text-slate-500">{t('home.stats.jobs')}</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-4xl md:text-5xl font-black text-slate-900 mb-2">100%</div>
-                            <div className="text-sm md:text-base uppercase tracking-wider font-semibold text-slate-500">{t('home.stats.safe')}</div>
+                            <div className="text-4xl md:text-5xl font-black text-slate-900 mb-2">
+                                {stats.total_completed !== null && stats.total_completed !== undefined ? stats.total_completed : (
+                                    <span className="inline-block w-20 h-10 bg-slate-200 rounded-xl animate-pulse" />
+                                )}
+                            </div>
+                            <div className="text-sm md:text-base uppercase tracking-wider font-semibold text-slate-500">{t('home.stats.completed')}</div>
                         </div>
                     </div>
                 </div>
@@ -129,55 +184,83 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Recommendations Section for Logged In */}
+            {/* Recommendations Section */}
             {user && (
                 <section className="py-24 px-6 max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                        <div className="premium-card p-10 bg-slate-900 text-white overflow-hidden relative">
-                            <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary-600/30 rounded-full blur-[100px]"></div>
-                            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                                <Users className="text-primary-400" /> {t('home.rec.talents_title')}
+
+                        {/* Freelancers */}
+                        <div className="premium-card p-10 relative overflow-hidden">
+                            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-900">
+                                <Users className="text-primary-600" /> {t('home.rec.talents_title')}
                             </h3>
                             <div className="space-y-4 relative z-10">
-                                {[
-                                    { name: 'Арслан Г.', prof: t('home.rec.prof_designer'), rate: '5.0' },
-                                    { name: 'Мая Б.', prof: t('home.rec.prof_dev'), rate: '4.9' },
-                                    { name: 'Тимур С.', prof: t('home.rec.prof_copy'), rate: '5.0' }
-                                ].map((t_item, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center font-bold">{t_item.name[0]}</div>
-                                            <div>
-                                                <div className="font-bold">{t_item.name}</div>
-                                                <div className="text-xs text-slate-400">{t_item.prof}</div>
+                                {loading ? (
+                                    [...Array(3)].map((_, i) => (
+                                        <div key={i} className="h-16 rounded-xl bg-slate-100 animate-pulse" />
+                                    ))
+                                ) : freelancers.length > 0 ? freelancers.map((profile) => {
+                                    const firstName = profile.user?.first_name || '';
+                                    const lastName = profile.user?.last_name || '';
+                                    const emailPart = profile.user?.email ? profile.user.email.split('@')[0] : '';
+                                    const displayName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : emailPart || '?';
+                                    
+                                    const initial = displayName[0]?.toUpperCase() || '?';
+                                    const avatarUrl = profile.avatar
+                                        ? (profile.avatar.startsWith('http') ? profile.avatar : `${API_BASE}${profile.avatar}`)
+                                        : null;
+                                    
+                                    return (
+                                        <Link key={profile.user?.id} to={`/talents/${profile.user?.id}`}
+                                            className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:border-primary-100 hover:shadow-md transition-all group">
+                                            <div className="flex items-center gap-3">
+                                                {avatarUrl ? (
+                                                    <img src={avatarUrl} alt={displayName} className="w-10 h-10 rounded-full object-cover" />
+                                                ) : (
+                                                    <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center font-bold text-sm text-white">{initial}</div>
+                                                )}
+                                                <div>
+                                                    <div className="font-bold text-slate-800 group-hover:text-primary-600 transition-colors">{displayName}</div>
+                                                    <div className="text-xs text-slate-500">{profile.profession || t('common.freelancer')}</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-primary-400 font-bold">
-                                            <Star size={14} fill="currentColor" /> {t_item.rate}
-                                        </div>
+                                            <div className="flex items-center gap-1 text-primary-600 font-bold">
+                                                <Star size={14} fill="currentColor" className="text-primary-500" />
+                                                {profile.rating_as_freelancer > 0 ? Number(profile.rating_as_freelancer).toFixed(1) : '—'}
+                                            </div>
+                                        </Link>
+                                    );
+                                }) : (
+                                    <div className="text-center py-6 text-slate-400 font-medium">
+                                        <Users size={32} className="mx-auto mb-2 opacity-20" />
+                                        <p>{t('talentList.noTalentsFound')}</p>
                                     </div>
-                                ))}
+                                )}
                             </div>
-                            <Link to="/talents" className="mt-8 block text-center py-3 border border-white/20 rounded-xl hover:bg-white/5 transition-colors font-bold">
+                            <Link to="/talents" className="mt-8 block text-center py-3 bg-slate-50 border border-slate-100 rounded-xl hover:bg-slate-100 transition-colors font-bold text-slate-600">
                                 {t('home.rec.btn_all_talents')}
                             </Link>
                         </div>
 
+                        {/* Recent Jobs */}
                         <div className="premium-card p-10">
                             <h3 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-900">
                                 <Briefcase className="text-primary-600" /> {t('home.rec.jobs_title')}
                             </h3>
                             <div className="space-y-4">
-                                {[
-                                    { title: t('home.rec.job_logo'), price: '400 TMT' },
-                                    { title: t('home.rec.job_landing'), price: '2500 TMT' },
-                                    { title: t('home.rec.job_trans'), price: '150 TMT' }
-                                ].map((j, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:shadow-md transition-shadow">
-                                        <div className="font-bold text-slate-800">{j.title}</div>
-                                        <div className="text-primary-600 font-black">{j.price}</div>
-                                    </div>
-                                ))}
+                                {loading ? (
+                                    [...Array(3)].map((_, i) => (
+                                        <div key={i} className="h-16 rounded-xl bg-slate-100 animate-pulse" />
+                                    ))
+                                ) : recentJobs.length > 0 ? recentJobs.map((job) => (
+                                    <Link key={job.id} to={`/jobs/${job.id}`}
+                                        className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:shadow-md transition-all hover:border-primary-100 group">
+                                        <div className="font-bold text-slate-800 group-hover:text-primary-600 transition-colors truncate pr-4">{job.title}</div>
+                                        <div className="text-primary-600 font-black shrink-0">{job.budget} TMT</div>
+                                    </Link>
+                                )) : (
+                                    <p className="text-center text-slate-400 py-4">{t('jobs.notFound')}</p>
+                                )}
                             </div>
                             <Link to="/jobs" className="mt-8 block text-center py-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors font-bold text-slate-600">
                                 {t('home.rec.btn_all_jobs')}
@@ -200,12 +283,48 @@ const Home = () => {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                    {['web_dev', 'design', 'copy', 'marketing', 'translation', 'mobile', 'video', 'seo'].map((catKey, idx) => (
-                        <Link key={idx} to={`/jobs?category=${catKey}`} className="premium-card p-6 flex flex-col justify-between hover:bg-slate-50 transition-colors">
-                            <div className="font-bold text-lg text-slate-900">{t(`home.categories.items.${catKey}`)}</div>
-                            <div className="text-sm text-slate-500 mt-4">120+ {t('home.categories.executors')}</div>
-                        </Link>
-                    ))}
+                    {loading ? (
+                        [...Array(4)].map((_, i) => (
+                            <div key={i} className="premium-card p-6 h-32 animate-pulse bg-slate-100"></div>
+                        ))
+                    ) : (
+                        categories.map((cat) => (
+                            <Link key={cat.id} to={`/jobs?category=${cat.id}`} className="premium-card p-6 flex flex-col justify-between hover:bg-slate-50 transition-all hover:scale-[1.02] group">
+                                <div className="flex justify-between items-start">
+                                    <div className="font-bold text-lg text-slate-900 leading-tight group-hover:text-primary-600 transition-colors">
+                                        {getCategoryName(cat)}
+                                    </div>
+                                    <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center text-primary-600 group-hover:bg-primary-600 group-hover:text-white transition-all overflow-hidden shrink-0">
+                                        {cat.custom_icon ? (
+                                            <img 
+                                                src={cat.custom_icon.startsWith('http') ? cat.custom_icon : `${API_BASE}${cat.custom_icon}`} 
+                                                className="w-full h-full object-cover" 
+                                                alt="" 
+                                            />
+                                        ) : (
+                                            (() => {
+                                                const IconComp = LucideIcons[cat.icon] || HelpCircle;
+                                                return <IconComp size={20} />;
+                                            })()
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-1 mt-4">
+                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                        {cat.specialists_count} {t('home.categories.executors')}
+                                    </div>
+                                    <div className="text-sm font-black text-primary-600">
+                                        {cat.jobs_count} {t('home.rec.jobs_title').toLowerCase()}
+                                    </div>
+                                </div>
+                            </Link>
+                        ))
+                    )}
+                    {categories.length === 0 && !loading && (
+                        <div className="col-span-full py-12 text-center text-slate-400 font-medium">
+                            {t('admin.categories_mgmt.no_categories')}
+                        </div>
+                    )}
                 </div>
             </section>
 

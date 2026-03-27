@@ -38,6 +38,14 @@ class Profile(models.Model):
     # --- Public Section ---
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     profession = models.CharField(max_length=255, blank=True)
+    category = models.ForeignKey(
+        'jobs.Category',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='profiles',
+        verbose_name="Primary Category"
+    )
     bio = models.TextField(max_length=1000, blank=True)
     skills = models.ManyToManyField(Skill, related_name='profiles', blank=True)
     

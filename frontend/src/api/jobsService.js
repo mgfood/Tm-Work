@@ -27,6 +27,11 @@ const jobsService = {
         return response.data;
     },
 
+    getGlobalStats: async () => {
+        const response = await apiClient.get('/jobs/categories/global-stats/');
+        return response.data;
+    },
+
     createJob: async (jobData) => {
         const response = await apiClient.post('/jobs/', jobData);
         return response.data;

@@ -5,7 +5,7 @@ from .models import Job, JobFile, Category
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'slug', 'icon']
+    list_display = ['name', 'name_ru', 'name_tk', 'slug', 'icon']
     prepopulated_fields = {'slug': ('name',)}
 
 

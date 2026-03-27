@@ -3,7 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from datetime import timedelta
-from django.db import transaction
+from django.db import transaction, models
+from decimal import Decimal
 from .models import VIPPlan, GlobalSettings, VIPSubscription
 from .serializers import VIPPlanSerializer, GlobalSettingsSerializer, VIPSubscriptionSerializer
 from apps.transactions.services import TransactionService
@@ -62,9 +63,15 @@ class VIPViewSet(viewsets.ModelViewSet):
         total_price = plan.total_price
         
         if profile.balance < total_price:
-            return Response({'error': 'Недостаточно средств на балансе'}, status=status.HTTP_400_BAD_REQUEST)
+            difference = (total_price - profile.balance).quantize(Decimal('0.01'))
+            return Response({
+                'error': f'Недостаточно средств. Вам нужно еще {difference} TMT.',
+                'needed': difference,
+                'current_balance': profile.balance,
+                'price': total_price
+            }, status=status.HTTP_400_BAD_REQUEST)
             
-        # Strictly block if already active (per client requirement)
+        # Check if already has active VIP
         active_sub = VIPSubscription.objects.filter(
             user=user, 
             end_date__gt=timezone.now()
@@ -77,7 +84,7 @@ class VIPViewSet(viewsets.ModelViewSet):
             )
             
         with transaction.atomic():
-            # Deduct balance and log transaction atomically
+            # 1. Deduct balance from user
             TransactionService.process_transaction(
                 user=user,
                 amount=-total_price,
@@ -85,14 +92,14 @@ class VIPViewSet(viewsets.ModelViewSet):
                 description=f"Purchase VIP Plan: {plan.name}"
             )
             
-            # Create or extend subscription
-            last_sub = VIPSubscription.objects.filter(user=user).order_by('-end_date').first()
+            # 2. Add revenue to system global settings
+            settings = GlobalSettings.get_settings()
+            settings.total_revenue = models.F('total_revenue') + total_price
+            settings.save(update_fields=['total_revenue'])
             
+            # 3. Create subscription
             start_date = timezone.now()
-            if last_sub and last_sub.end_date > timezone.now():
-                start_date = last_sub.end_date
-            
-            # Use approx 30-day months for now, but in a cleaner way
+            # Duration based on actual months (approx 30 days)
             end_date = start_date + timedelta(days=plan.months * 30)
             
             sub = VIPSubscription.objects.create(
@@ -102,12 +109,14 @@ class VIPViewSet(viewsets.ModelViewSet):
                 end_date=end_date
             )
             
-            # Update profile flag for quick visual checks
             profile.is_vip = True
             profile.save(update_fields=['is_vip'])
             
+        profile.refresh_from_db()
+            
         return Response({
             'status': 'VIP activated',
+            'plan_name': plan.name,
             'end_date': end_date,
             'new_balance': profile.balance
         })

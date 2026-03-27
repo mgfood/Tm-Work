@@ -10,10 +10,13 @@ class JobFileSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    jobs_count = serializers.IntegerField(read_only=True)
+    specialists_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'icon', 'custom_icon']
-        read_only_fields = ['slug']
+        fields = ['id', 'name', 'name_ru', 'name_tk', 'slug', 'icon', 'custom_icon', 'jobs_count', 'specialists_count']
+        read_only_fields = ['slug', 'jobs_count', 'specialists_count']
         extra_kwargs = {
             'icon': {'required': False, 'allow_null': True},
             'custom_icon': {'required': False, 'allow_null': True}

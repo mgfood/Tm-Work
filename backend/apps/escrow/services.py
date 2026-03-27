@@ -121,6 +121,10 @@ class EscrowService:
                 reference_id=str(escrow.id),
                 description=f"Revenue from job: {escrow.job.title} ({commission_percent}%)"
             )
+
+            # 4. Update total revenue in global settings
+            settings.total_revenue = models.F('total_revenue') + commission_amount
+            settings.save(update_fields=['total_revenue'])
         
         return escrow
 

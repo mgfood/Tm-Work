@@ -17,6 +17,20 @@ class UserSerializer(serializers.ModelSerializer):
     is_verified = serializers.BooleanField(source='profile.is_verified', read_only=True)
     is_vip = serializers.BooleanField(source='profile.is_vip', read_only=True)
     balance = serializers.DecimalField(source='profile.balance', max_digits=12, decimal_places=2, read_only=True)
+    vip_until = serializers.SerializerMethodField()
+    active_plan_id = serializers.SerializerMethodField()
+    
+    def get_vip_until(self, obj):
+        if not hasattr(obj, 'profile'):
+            return None
+        sub = obj.profile.currently_active_subscription
+        return sub.end_date if sub else None
+
+    def get_active_plan_id(self, obj):
+        if not hasattr(obj, 'profile'):
+            return None
+        sub = obj.profile.currently_active_subscription
+        return sub.plan.id if sub else None
     
     class Meta:
         model = User
@@ -28,6 +42,8 @@ class UserSerializer(serializers.ModelSerializer):
             'roles',
             'is_verified',
             'is_vip',
+            'vip_until',
+            'active_plan_id',
             'balance',
             'blocked_users',
             'is_active',
@@ -92,7 +108,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         
         # Create profile
         from apps.profiles.models import Profile
-        Profile.objects.get_or_create(user=user, defaults={'balance': 5000})
+        Profile.objects.get_or_create(user=user, defaults={'balance': 0})
         
         return user
 

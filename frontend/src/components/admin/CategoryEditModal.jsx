@@ -7,6 +7,8 @@ const CategoryEditModal = ({ isOpen, category, onClose, onSuccess }) => {
     const { t } = useTranslation();
     const [formData, setFormData] = useState({
         name: '',
+        name_ru: '',
+        name_tk: '',
         icon: ''
     });
     const [loading, setLoading] = useState(false);
@@ -16,6 +18,8 @@ const CategoryEditModal = ({ isOpen, category, onClose, onSuccess }) => {
         if (category) {
             setFormData({
                 name: category.name || '',
+                name_ru: category.name_ru || '',
+                name_tk: category.name_tk || '',
                 icon: category.icon || ''
             });
         }
@@ -62,9 +66,33 @@ const CategoryEditModal = ({ isOpen, category, onClose, onSuccess }) => {
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                            placeholder="Technical name..."
                             required
                         />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Название (RU)</label>
+                            <input
+                                type="text"
+                                value={formData.name_ru}
+                                onChange={(e) => setFormData({ ...formData, name_ru: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Русский..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Ady (TK)</label>
+                            <input
+                                type="text"
+                                value={formData.name_tk}
+                                onChange={(e) => setFormData({ ...formData, name_tk: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Türkmen..."
+                            />
+                        </div>
                     </div>
 
                     <div>

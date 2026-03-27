@@ -20,6 +20,12 @@ class GlobalSettings(models.Model):
     )
     
     updated_at = models.DateTimeField(auto_now=True)
+    total_revenue = models.DecimalField(
+        max_digits=15, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="Total revenue accumulated by the platform (VIP, commissions, etc.)"
+    )
 
     class Meta:
         db_table = 'global_settings'

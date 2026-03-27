@@ -8,14 +8,42 @@ from .services import JobService
 from apps.users.permissions import IsClient, IsJobOwner
 from django.db import models # Added this import for models.Q
 
+from django.db.models import Count, Q
+from .models import Job, JobFile, Category
+
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
     serializer_class = CategorySerializer
+
+    def get_queryset(self):
+        return Category.objects.annotate(
+            jobs_count=Count(
+                'jobs',
+                filter=Q(jobs__status=Job.Status.PUBLISHED),
+                distinct=True
+            ),
+            specialists_count=Count(
+                'profiles',
+                filter=Q(profiles__user__roles__name='FREELANCER'),
+                distinct=True
+            )
+        )
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny], url_path='global-stats')
+    def global_stats(self, request):
+        from apps.users.models import User
+        total_freelancers = User.objects.filter(roles__name='FREELANCER').distinct().count()
+        total_jobs = Job.objects.filter(status=Job.Status.PUBLISHED).count()
+        total_completed = Job.objects.filter(status=Job.Status.COMPLETED).count()
+        return Response({
+            'total_freelancers': total_freelancers,
+            'total_jobs': total_jobs,
+            'total_completed': total_completed,
+        })
 
 
 class JobViewSet(viewsets.ModelViewSet):

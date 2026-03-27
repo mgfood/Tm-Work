@@ -8,6 +8,8 @@ from django.utils.text import slugify
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
+    name_ru = models.CharField(max_length=100, verbose_name=_("Name (RU)"), null=True, blank=True)
+    name_tk = models.CharField(max_length=100, verbose_name=_("Name (TK)"), null=True, blank=True)
     slug = models.SlugField(unique=True, blank=True, allow_unicode=True)
     icon = models.CharField(max_length=50, null=True, blank=True, help_text="Lucide icon name")
     custom_icon = models.ImageField(upload_to='category_icons/', null=True, blank=True)

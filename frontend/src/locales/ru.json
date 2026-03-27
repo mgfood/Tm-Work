@@ -631,6 +631,7 @@
     "stats": {
       "jobs": "Работ",
       "safe": "Безопасно",
+      "completed": "Завершённых работ",
       "talents": "Специалистов"
     },
     "welcome_guest": "Теперь в Туркменистане",
@@ -894,7 +895,8 @@
     "insufficient_funds": "Недостаточно средств. Вам нужно еще {{amount}} TMT.",
     "modal_btn_cancel": "Отмена",
     "modal_btn_confirm": "Да, активировать",
-    "modal_confirm_text": "Активировать план <1>{{name}}</1> на <2>{{months}} мес.</2> за <3>{{price}} TMT</3>?",
+    "modal_confirm_text": "Активировать план <1>{{name}}</1> на <3>{{months}} мес.</3> за <5>{{price}} TMT</5>?",
+    "modal_confirm_text_v2": "Активировать план {{name}} на {{months}} мес. за {{price}} TMT?",
     "modal_confirm_title": "Подтверждение покупки",
     "per_month": "TMT / Мес",
     "plan_benefit": "Выгода {{percentage}}%",
