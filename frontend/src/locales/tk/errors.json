@@ -1,0 +1,9 @@
+{
+  "acceptProposalError": "Jogaby kabul etmekde säwlik",
+  "approveWorkError": "Işi tassyklamakda säwlik ýüze çykdy",
+  "jobNotFound": "Sargyt tapylmady",
+  "jobNotFoundAccess": "Sargyt tapylmady ýa-da size ygtyýar ýok.",
+  "proposalSubmitError": "Jogap ugratmakda ýalňyşlyk. Mümkin, siz eýýäm jogap berensiňiz.",
+  "revisionRequestError": "Düzedişe ibermekde säwlik ýüze çykdy",
+  "submitWorkError": "Işi tabşyrmakda säwlik ýüze çykdy"
+}

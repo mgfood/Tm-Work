@@ -1,96 +1,11 @@
 {
-  "create_job": {
-    "buttons": {
-      "publish": "Sargydy çap et",
-      "save_draft": "Garalama hökmünde ýatda sakla"
-    },
-    "errors": {
-      "budget_positive": "Býudjet položitel san bolmaly",
-      "default": "Sargyt döredip bolmady. Maglumatlaryň dogry doldurylandygyny barlaň.",
-      "prefix": "Ýalňyşlyk",
-      "publish_failed": "Sargyt garalama hökmünde döredildi, ýöne çap edilmedi. Ony soňrak dolandyryş panelinde çap edip bilersiňiz."
-    },
-    "fields": {
-      "budget_label": "Býudjet (TMT)",
-      "category_label": "Kategoriýa",
-      "category_placeholder": "Kategoriýany saýlaň",
-      "deadline_label": "Iň soňky möhleti (haýsy senede çenli)",
-      "description_label": "Doly beýany",
-      "description_placeholder": "Talaplaryňyzy, şertleriňizi we garaşylýan netijäni beýan ediň...",
-      "title_hint": "Taslamanyň mazmunyny gysga we düşnükli beýan ediň",
-      "title_label": "Sargydyň ady",
-      "title_placeholder": "Mysal üçin: Onlaýn dükan üçin logotip döretmek"
-    },
-    "subtitle": "Iň oňat ýerine ýetirijileri tapmak üçin meseläni mümkin gader doly beýan ediň",
-    "success": {
-      "drafted": "Sargyt garalama hökmünde ýatda saklanyldy",
-      "published": "Sargyt üstünlikli çap edildi!"
-    },
-    "title": "Täze sargyt döretmek"
-  },
-  "editJob": {
-    "btnPublish": "Indi çap et",
-    "btnSave": "Üýtgeşmeleri ýatda sakla",
-    "budgetError": "Býudjet položitel san bolmaly",
-    "fileDeleteConfirm": "Siz dogrudan hem bu faýly öçürmek isleýärsiňizmi?",
-    "fileDeleteError": "Faýly öçürmekde ýalňyşlyk ýüze çykdy",
-    "fileDeleteSuccess": "Faýl öçürildi",
-    "fileUploadError": "Faýly ýüklemekde ýalňyşlyk ýüze çykdy",
-    "fileUploadSuccess": "Faýl ýüklendi",
-    "labelBudget": "Býudjet (TMT)",
-    "labelCategory": "Kategoriýa",
-    "labelDeadline": "Iň soňky möhleti (haýsy senede çenli)",
-    "labelDescription": "Doly beýany",
-    "labelFiles": "Faýllar we goşundylar",
-    "labelTitle": "Sargydyň ady",
-    "loadingError": "Sargyt maglumatlaryny ýükläp bolmady",
-    "publishSuccess": "Sargyt üstünlikli çap edildi!",
-    "saveSuccess": "Üýtgeşmeler ýatda saklanyldy",
-    "selectCategory": "Kategoriýany saýlaň",
-    "subtitle": "Beýanyna üýtgeşmeler giriziň ýa-da faýllary goşuň",
-    "title": "Sargydy redaktirlemek",
-    "updateError": "Sargydy täzeläp bolmady",
-    "uploadHint": "Suratlar, resminamalar (PDF, DOCX)",
-    "uploadPlaceholder": "Faýl ýüklemek üçin basyň"
-  },
-  "job": {
-    "attachedFiles": "Goşulan faýllar",
-    "budget": "Býudjet",
-    "clientInfo": "Sargytçy barada",
-    "completedStatus": "Sargyt tamamlandy",
-    "completedText": "Iş kabul edildi, töleg ýerine ýetirijä geçirildi. Hyzmatdaşlyk barada seslenme galdyryp bilersiňiz.",
-    "coverLetter": "Ugratma haty",
-    "coverLetterPlaceholder": "Näme üçin bu işe laýykdygyňyzy ýazyň...",
-    "deadline": "Möhleti",
-    "deadlineDays": "Ýerine ýetiriş möhleti (gün)",
-    "descriptionTitle": "Sargydyň beýany",
-    "file": "Faýl",
-    "noProposals": "Bu sargyt üçin heniz jogap ýok.",
-    "noReviews": "Seslenmeler ýok.",
-    "onPlatformSince": "Platformada şu seneden bäri",
-    "proposalSent": "Jogap ugradyldy!",
-    "proposalSentSub": "Sargytçy habarnama alar we siziň bilen habarlaşar.",
-    "proposals": "Jogaplar",
-    "published": "Çap edildi",
-    "reviewsTitle": "Sargyt boýunça seslenmeler",
-    "submittedContent": "Tabşyrylan iş:",
-    "waitingForClientReview": "Iş tabşyryldy we sargytçy tarapyndan barlaga garaşylýar.",
-    "waitingForFreelancer": "Ýerine ýetiriji sargyt üstünde işleýär. Işiň tabşyrylmagyna garaşyň.",
-    "workInProgress": "Taslama işjeň",
-    "workResultLabel": "Işiň netijesi (salgylar, tekst)",
-    "workResultPlaceholder": "Ýerine ýetirilen işi beýan ediň ýa-da salgylary goşuň...",
-    "workUnderReview": "Iş barlagda",
-    "yourPrice": "Siziň bahaňyz (TMT)"
-  },
-  "jobs": {
-    "budget": "Býujet",
-    "loadError": "Sargytlar sanawyny ýükläp bolmady. Soňra synanyşyň.",
-    "notFound": "Sargytlar tapylmady",
-    "postJob": "Sargyt goşmak",
-    "remote": "Uzakdan",
-    "searchPlaceholder": "Ady ýa-da açar sözler...",
-    "searchSubtitle": "Başarnyklaryňyza laýyk gelýän ideal sargydy tapyň",
-    "searchTitle": "Iş gözlegi",
-    "tryChangingFilters": "Gözleg parametrlerini üýtgetmäge synanyşyň"
-  }
+  "budget": "Býujet",
+  "loadError": "Sargytlar sanawyny ýükläp bolmady. Soňra synanyşyň.",
+  "notFound": "Sargytlar tapylmady",
+  "postJob": "Sargyt goşmak",
+  "remote": "Uzakdan",
+  "searchPlaceholder": "Ady ýa-da açar sözler...",
+  "searchSubtitle": "Başarnyklaryňyza laýyk gelýän ideal sargydy tapyň",
+  "searchTitle": "Iş gözlegi",
+  "tryChangingFilters": "Gözleg parametrlerini üýtgetmäge synanyşyň"
 }

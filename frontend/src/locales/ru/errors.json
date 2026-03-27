@@ -1,0 +1,9 @@
+{
+  "acceptProposalError": "Ошибка при принятии отклика",
+  "approveWorkError": "Ошибка при одобрении работы",
+  "jobNotFound": "Заказ не найден",
+  "jobNotFoundAccess": "Заказ не найден или у вас нет доступа.",
+  "proposalSubmitError": "Ошибка при отправке отклика. Возможно, вы уже откликались.",
+  "revisionRequestError": "Ошибка при возврате на доработку",
+  "submitWorkError": "Ошибка при сдаче работы"
+}

@@ -1,0 +1,15 @@
+{
+  "email_label": "Email адрес",
+  "email_placeholder": "example@mail.com",
+  "error_credentials": "Неверный email или пароль",
+  "error_generic": "Произошла ошибка. Попробуйте позже.",
+  "forgot_password": "Забыли пароль?",
+  "join_link": "Зарегистрироваться",
+  "logging_in": "Вход...",
+  "login_button": "Войти",
+  "no_account": "Нет аккаунта?",
+  "password_label": "Пароль",
+  "password_placeholder": "••••••••",
+  "subtitle": "Войдите, чтобы получить доступ к вашему аккаунту",
+  "title": "Добро пожаловать"
+}

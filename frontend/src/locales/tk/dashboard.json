@@ -1,0 +1,19 @@
+{
+  "active_projects": "Siziň işjeň taslamalaryňyz",
+  "auth_required": "Ulgama giriň",
+  "auth_subtitle": "Taslamalaryňyzy görmek we dolandyrmak üçin ulgama girmeli.",
+  "budget": "Býujet",
+  "find_job": "Häzir iş gözle",
+  "id": "ID",
+  "login_button": "Hasaba girmek",
+  "new_order": "Täze sargyt",
+  "no_projects": "Sizde häzirlikçe işjeň taslama ýok.",
+  "projects_count": "Taslamalar",
+  "reviews_count": "Synlar",
+  "stats_title": "Statistika",
+  "tip_escrow": "Tölegleriňizi goramak üçin Escrow ulgamyny ulanyň.",
+  "tip_profile": "Has köp sargytçy çekmek üçin profiliňizi dolduryň.",
+  "tips_title": "Maslahatlar",
+  "welcome": "Salam, {{name}}!",
+  "welcome_subtitle": "Şahsy kabinetiňize hoş geldiňiz."
+}

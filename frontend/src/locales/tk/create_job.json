@@ -1,0 +1,29 @@
+{
+  "buttons": {
+    "publish": "Sargydy çap et",
+    "save_draft": "Garalama hökmünde ýatda sakla"
+  },
+  "errors": {
+    "budget_positive": "Býudjet položitel san bolmaly",
+    "default": "Sargyt döredip bolmady. Maglumatlaryň dogry doldurylandygyny barlaň.",
+    "prefix": "Ýalňyşlyk",
+    "publish_failed": "Sargyt garalama hökmünde döredildi, ýöne çap edilmedi. Ony soňrak dolandyryş panelinde çap edip bilersiňiz."
+  },
+  "fields": {
+    "budget_label": "Býudjet (TMT)",
+    "category_label": "Kategoriýa",
+    "category_placeholder": "Kategoriýany saýlaň",
+    "deadline_label": "Iň soňky möhleti (haýsy senede çenli)",
+    "description_label": "Doly beýany",
+    "description_placeholder": "Talaplaryňyzy, şertleriňizi we garaşylýan netijäni beýan ediň...",
+    "title_hint": "Taslamanyň mazmunyny gysga we düşnükli beýan ediň",
+    "title_label": "Sargydyň ady",
+    "title_placeholder": "Mysal üçin: Onlaýn dükan üçin logotip döretmek"
+  },
+  "subtitle": "Iň oňat ýerine ýetirijileri tapmak üçin meseläni mümkin gader doly beýan ediň",
+  "success": {
+    "drafted": "Sargyt garalama hökmünde ýatda saklanyldy",
+    "published": "Sargyt üstünlikli çap edildi!"
+  },
+  "title": "Täze sargyt döretmek"
+}

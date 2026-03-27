@@ -1,0 +1,35 @@
+{
+  "form": {
+    "emailLabel": "Email adresiňiz",
+    "emailPlaceholder": "example@mail.com",
+    "messageLabel": "Habar",
+    "messagePlaceholder": "Soragyňyzyň jikme-jikliklerini ýazyň...",
+    "nameLabel": "Adyňyz",
+    "namePlaceholder": "Adyňyz / Kompaniýanyň ady",
+    "subjectLabel": "Ýüzlenmäniň temasy",
+    "subjectPlaceholder": "Size näme kömek edip bileris?",
+    "submitButton": "Sargyt ugratmak",
+    "subtitle": "Anketany dolduryň we biz mümkin boldugyça çalt habarlaşarys",
+    "success": "Siziň habaryňyz üstünlikli ugradyldy! Ýakyn wagtda habarlaşarys.",
+    "title": "Habar ugratmak"
+  },
+  "labels": {
+    "address": "Salgymyz",
+    "email": "Email",
+    "hours": "Iş wagty",
+    "phone": "Telefon"
+  },
+  "sidebarTitle": "Habarlaşmak",
+  "subtitle": "Sizde soraglar, teklipler barmy ýa-da kömek gerekmi? Biziň hünärmenler toparymyz taslamanyzy goldamaga elmydama taýýardyr.",
+  "support": {
+    "description": "Iş wagtynda Telegram-bot arkaly 2 sagadyň dowamynda jogap berýäris.",
+    "tgButton": "Telegram-da ýazmak",
+    "title": "Gyssagly kömekmi?"
+  },
+  "title": "Geliň,",
+  "titleAccent": "bilelikde guralyň",
+  "values": {
+    "address": "Aşgabat ş., Bitarap Türkmenistan şaýoly, 123",
+    "hours": "Du-An: 09:00 - 18:00"
+  }
+}

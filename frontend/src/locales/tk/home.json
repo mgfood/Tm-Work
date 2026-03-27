@@ -1,0 +1,70 @@
+{
+  "actions": {
+    "find_job": "Amatly iş gözlegi",
+    "find_talents": "Hünärmen gözlegi",
+    "post_job": "Täze sargyt goşuň"
+  },
+  "btn_dashboard": "Dolandyryş paneli",
+  "btn_start": "Işe başlamak",
+  "btn_view_jobs": "Sargytlary gör",
+  "categories": {
+    "all_link": "Ähli kategoriýalar",
+    "executors": "ýerine ýetiriji",
+    "items": {
+      "copy": "Kopiraýting",
+      "design": "Grafiki dizaýn",
+      "marketing": "Marketinq",
+      "mobile": "Mobil goşundylar",
+      "seo": "SEO",
+      "translation": "Terjimeler",
+      "video": "Wideo montaj",
+      "web_dev": "Web işläp düzme"
+    },
+    "subtitle": "Öz işiniň ussatlaryny tapyň",
+    "title": "Meşhur kategoriýalar"
+  },
+  "cta": {
+    "btn_contact": "Biz bilen habarlaşyň",
+    "btn_reg": "Hasaba alyş",
+    "desc": "Şu gün müňlerçe kompaniýalara we hünärmenlere goşulyň.",
+    "title_part1": "Birinji işiňizi goýmaga",
+    "title_part2": "taýynmy?"
+  },
+  "features": {
+    "search_desc": "Biz açyk synlar we reýting ulgamy arkaly ýerine ýetirijileriň abraýyna gözegçilik edýäris.",
+    "search_title": "Barlanan zehinler",
+    "shield_desc": "Pullar ulgam tarapyndan saklanýar we diňe işiň hili tassyklanyndan soň tölenýär.",
+    "shield_title": "Howpsuz söwdalar",
+    "subtitle": "Biz özara täsir etme prosesini ýönekeý, düşnükli we maksimal derejede goralan etdik.",
+    "title": "Näme üçin biz",
+    "zap_desc": "Düşnükli interfeýs birnäçe minutda taslama döretmäge ýa-da iş tapmaga mümkinçilik berýär.",
+    "zap_title": "Amatlylyk we tizlik"
+  },
+  "hero_desc_guest": "Frilans üçin ilkinji döwrebap platforma. Biz zehinli hünärmenleri we ambisiýaly sargytçylary ygtybarly sanly gurşawda birleşdirýäris.",
+  "hero_desc_user": "Siziň sargytlary we jogaplary dolandyryş merkeziňiz. Netijeli işlemek üçin ähli gurallar bir ýerde.",
+  "hero_title_guest_part1": "Ideal ýerine ýetirijini",
+  "hero_title_guest_part2": "häzir",
+  "hero_title_guest_part3": "tapyň",
+  "hero_title_user_part1": "Işleriňizi",
+  "hero_title_user_part2": "dolandyryň",
+  "rec": {
+    "btn_all_jobs": "Ähli sargytlary gör",
+    "btn_all_talents": "Ähli hünärmenleri gör",
+    "job_landing": "Lending işläp düzmek",
+    "job_logo": "Logotip döretmek",
+    "job_trans": "Tekst terjimesi",
+    "jobs_title": "Täze sargytlar",
+    "prof_copy": "Kopiraýter",
+    "prof_designer": "UI/UX Dizaýner",
+    "prof_dev": "Python Programmist",
+    "talents_title": "Maslahat berilýän hünärmenler"
+  },
+  "stats": {
+    "completed": "Tamamlandy",
+    "jobs": "Işler",
+    "safe": "Ygtybarly",
+    "talents": "Hünärmenler"
+  },
+  "welcome_guest": "Indi Türkmenistanda",
+  "welcome_user": "Hoş geldiňiz"
+}

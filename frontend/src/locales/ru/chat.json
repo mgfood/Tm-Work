@@ -1,23 +1,21 @@
 {
-  "chat": {
-    "error_send": "Ошибка при отправке сообщения",
-    "features": {
-      "fast": "Быстро",
-      "secure": "Безопасно"
-    },
-    "input_placeholder": "Введите сообщение...",
-    "no_threads": "Нет активных чатов",
-    "start_conversation": "Начните общение...",
-    "tabs": {
-      "all": "Все",
-      "job": "Заказы",
-      "personal": "Личные",
-      "support": "Поддержка",
-      "system": "Оповещения"
-    },
-    "title": "Чаты",
-    "welcome_subtitle_1": "Выберите диалог слева для",
-    "welcome_subtitle_2": "начала работы",
-    "welcome_title": "Ваши сообщения"
-  }
+  "error_send": "Ошибка при отправке сообщения",
+  "features": {
+    "fast": "Быстро",
+    "secure": "Безопасно"
+  },
+  "input_placeholder": "Введите сообщение...",
+  "no_threads": "Нет активных чатов",
+  "start_conversation": "Начните общение...",
+  "tabs": {
+    "all": "Все",
+    "job": "Заказы",
+    "personal": "Личные",
+    "support": "Поддержка",
+    "system": "Оповещения"
+  },
+  "title": "Чаты",
+  "welcome_subtitle_1": "Выберите диалог слева для",
+  "welcome_subtitle_2": "начала работы",
+  "welcome_title": "Ваши сообщения"
 }

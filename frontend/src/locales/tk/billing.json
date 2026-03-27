@@ -1,0 +1,14 @@
+{
+  "available_balance": "Elýeterli balans",
+  "currency": "TMT",
+  "deposit": "Hasaby doldurmak",
+  "history_empty": "Amallaryň taryhy boş",
+  "history_title": "Amallaryň taryhy",
+  "show_all": "Ähli amallary görkez",
+  "tx_deposit": "Balansy doldurmak",
+  "tx_escrow_lock": "Bronlamak (Eskrou)",
+  "tx_escrow_release": "Taslama üçin töleg",
+  "tx_withdrawal": "Serişdeleri çykarmak",
+  "usage_hint": "Siz balansyňyzy sargytlary tölemek ýa-da profiliňizi öňe sürmek üçin ulanyp bilersiňiz.",
+  "withdraw": "Pul çykarmak"
+}

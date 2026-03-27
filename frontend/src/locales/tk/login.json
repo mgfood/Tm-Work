@@ -1,0 +1,15 @@
+{
+  "email_label": "Email adresi",
+  "email_placeholder": "example@mail.com",
+  "error_credentials": "Email ýa-da parol ýalňyş",
+  "error_generic": "Girişde ýalňyşlyk ýüze çykdy. Gaýtadan synanyşyň.",
+  "forgot_password": "Paroly ýatdan çykardyňyzmy?",
+  "join_link": "Hasaba alyş",
+  "logging_in": "Girilýär...",
+  "login_button": "Ulgama gir",
+  "no_account": "Hasabyňyz ýokmy?",
+  "password_label": "Parol",
+  "password_placeholder": "Parolyňyzy ýazyň",
+  "subtitle": "Işi dowam etdirmek üçin hasabyňyza giriň",
+  "title": "Hoş geldiňiz"
+}
