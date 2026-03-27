@@ -21,6 +21,11 @@ const ChatInfoModal = ({ isOpen, onClose, partner, thread }) => {
     // Let's assume a generic profile route or disable link if not sure.
     // But users want to see profile.
 
+    const displayName = (partner.first_name || partner.last_name)
+        ? `${partner.first_name || ''} ${partner.last_name || ''}`.trim()
+        : partner.email;
+    const initial = displayName ? displayName[0].toUpperCase() : '?';
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="fixed inset-0 -z-10" onClick={onClose}></div>
@@ -37,60 +42,69 @@ const ChatInfoModal = ({ isOpen, onClose, partner, thread }) => {
                 </div>
 
                 {/* Avatar & Basic Info */}
-                <div className="px-6 pb-8 -mt-12 text-center">
-                    <div className="w-24 h-24 mx-auto bg-white rounded-3xl p-1 shadow-lg mb-4">
-                        <div className="w-full h-full bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 text-3xl font-black overflow-hidden">
+                <div className="px-6 pb-8 -mt-12 text-center relative">
+                    <div className="w-24 h-24 mx-auto bg-white rounded-3xl p-1 shadow-xl mb-4 group ring-4 ring-white transition-all hover:scale-105">
+                        <div className="w-full h-full bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 text-3xl font-black overflow-hidden relative">
                             {partner.avatar ? (
-                                <img src={partner.avatar} alt={partner.first_name} className="w-full h-full object-cover" />
-                            ) : (
-                                partner.first_name?.[0] || '?'
-                            )}
+                                <img src={partner.avatar} alt={displayName} className="w-full h-full object-cover" />
+                            ) : initial}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
                     </div>
 
-                    <h2 className="text-2xl font-black text-slate-900 mb-1">
-                        {partner.first_name} {partner.last_name}
+                    <div className="inline-flex items-center gap-2 px-4 py-1 bg-slate-50 border border-slate-100 rounded-full mb-3">
+                        <User size={12} className="text-primary-600" />
+                        <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">{t('common.user_info')}</span>
+                    </div>
+
+                    <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">
+                        {displayName}
                     </h2>
 
-                    {partner.headline && (
-                        <p className="text-slate-500 font-medium text-sm mb-4 line-clamp-2">
+                    {partner.headline ? (
+                        <p className="text-slate-500 font-medium text-sm mb-6 line-clamp-2 px-4">
                             {partner.headline}
                         </p>
+                    ) : (
+                        <div className="h-6"></div> // Spacer when no headline
                     )}
 
-                    <div className="flex justify-center gap-2 mb-6">
+                    <div className="flex justify-center gap-3 mb-8">
                         {/* Rating if available */}
                         {partner.rating > 0 && (
-                            <div className="px-3 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-bold flex items-center gap-1 border border-yellow-100">
-                                <Star size={12} fill="currentColor" />
+                            <div className="px-4 py-1.5 bg-amber-50 text-amber-700 rounded-2xl text-xs font-bold flex items-center gap-1.5 border border-amber-100 shadow-sm">
+                                <Star size={14} fill="currentColor" />
                                 {partner.rating}
                             </div>
                         )}
-                        {/* Role Badge if available */}
-                        {/* We don't have role reliably in partner object from thread usually, unless added by serializer */}
+                        {/* Status Badge */}
+                        <div className="px-4 py-1.5 bg-green-50 text-green-700 rounded-2xl text-xs font-bold flex items-center gap-1.5 border border-green-100 shadow-sm">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                            {t('common.active')}
+                        </div>
                     </div>
 
                     {/* Info Grid */}
-                    <div className="grid grid-cols-1 gap-3 text-left mb-6">
-                        {partner.email && (
-                            <div className="p-3 bg-slate-50 rounded-xl flex items-center gap-3 border border-slate-100">
-                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 shadow-sm">
-                                    <Mail size={16} />
+                    <div className="grid grid-cols-1 gap-3 text-left mb-8">
+                        {partner.email && !partner.first_name && !partner.last_name && (
+                            <div className="p-4 bg-slate-50 hover:bg-slate-100/80 rounded-2xl flex items-center gap-4 border border-slate-100 transition-colors">
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm">
+                                    <Mail size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] uppercase font-bold text-slate-400">{t('auth.email')}</p>
+                                    <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">{t('auth.email')}</p>
                                     <p className="text-sm font-bold text-slate-900 truncate">{partner.email}</p>
                                 </div>
                             </div>
                         )}
 
                         {thread?.job_title && (
-                            <div className="p-3 bg-blue-50/50 rounded-xl flex items-center gap-3 border border-blue-100/50">
-                                <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-                                    <Briefcase size={16} />
+                            <div className="p-4 bg-blue-50/50 hover:bg-blue-50 rounded-2xl flex items-center gap-4 border border-blue-100/50 transition-colors">
+                                <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                                    <Briefcase size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] uppercase font-bold text-slate-400">{t('common.job')}</p>
+                                    <p className="text-[10px] uppercase font-bold text-blue-400 mb-0.5">{t('common.job')}</p>
                                     <Link to={`/jobs/${thread.job}`} className="text-sm font-bold text-blue-700 truncate hover:underline block" onClick={onClose}>
                                         {thread.job_title}
                                     </Link>
@@ -100,9 +114,14 @@ const ChatInfoModal = ({ isOpen, onClose, partner, thread }) => {
                     </div>
 
                     {/* Actions */}
-                    {/* Would link to actual profile if we knew the route for sure. Assuming /profile/public/:id for now or similar */}
-                    {/* Since I am not 100% sure of the public profile route, I will omit the "View Profile" button or point to a safe guess */}
-                    {/* Actually, let's just show close for now if no link */}
+                    <Link
+                        to={`/talents/${partner.id || partner.user_id || thread?.partner_id}`}
+                        onClick={onClose}
+                        className="w-full btn-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-primary-600/20 hover:scale-[1.02] transition-all"
+                    >
+                        <ExternalLink size={20} />
+                        {t('buttons.clientProfile')}
+                    </Link>
                 </div>
             </div>
         </div>

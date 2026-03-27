@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Users, Search, Filter, MoreVertical, CheckCircle,
     XCircle, Award, Edit, Trash, History, Shield,
@@ -50,13 +50,37 @@ const UsersTab = () => {
         fetchUsers();
     }, []);
 
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setOpenMenu(null);
+            }
+        };
+
+        if (openMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [openMenu]);
+
     const handleUserAction = async (userId, actionType, reason = '') => {
         try {
             setActionLoading(true);
             if (actionType === 'block') {
                 await adminService.blockUser(userId, reason);
+                // Optimistic update
+                setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: false } : u));
             } else if (actionType === 'unblock') {
                 await adminService.unblockUser(userId, reason);
+                // Optimistic update
+                setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: true, blocked_until: null } : u));
             } else if (actionType === 'toggle_verify') {
                 await adminService.toggleVerifyUser(userId);
             } else if (actionType === 'toggle_vip') {
@@ -69,10 +93,16 @@ const UsersTab = () => {
                 });
                 if (isConfirmed) {
                     await adminService.deleteUser(userId);
+                    setUsers(prev => prev.filter(u => u.id !== userId));
                     setIsUserModalOpen(false);
                 }
             }
-            await fetchUsers();
+            // Fetch updated data in background to ensure sync
+            adminService.getUsers().then(data => {
+                const usersArray = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []);
+                setUsers(usersArray);
+            });
+            
             setOpenMenu(null);
             if (selectedUser?.id === userId && actionType !== 'delete') {
                 handleShowUserDetails(userId);
@@ -117,12 +147,32 @@ const UsersTab = () => {
         e.preventDefault();
         try {
             setActionLoading(true);
+            
+            // Optimistic update for the table
+            const blockedUntil = new Date();
+            blockedUntil.setHours(blockedUntil.getHours() + parseInt(tempBlockData.hours));
+            
+            setUsers(prev => prev.map(u => 
+                u.id === selectedUser.id 
+                ? { ...u, blocked_until: blockedUntil.toISOString() } 
+                : u
+            ));
+
             await adminService.tempBlockUser(selectedUser.id, tempBlockData);
             setIsTempBlockModalOpen(false);
             setTempBlockData({ hours: '24', reason: '' });
+            
+            // Background sync
+            adminService.getUsers().then(data => {
+                const usersArray = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []);
+                setUsers(usersArray);
+            });
+
             await handleShowUserDetails(selectedUser.id);
         } catch (err) {
             showToast(err.response?.data?.error || t('admin.actions.error_temp_block'), 'error');
+            // Revert on error
+            fetchUsers();
         } finally {
             setActionLoading(false);
         }
@@ -151,8 +201,8 @@ const UsersTab = () => {
 
     return (
         <div data-testid="users-tab" className="space-y-6">
-            <div className="premium-card overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-                <div className="overflow-x-auto">
+            <div className="premium-card overflow-visible animate-in slide-in-from-bottom-4 duration-500 min-h-[400px]">
+                <div className="overflow-visible w-full pb-32">
                     <table data-testid="users-table" className="w-full text-left border-collapse">
                         <thead className="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-widest">
                             <tr>
@@ -189,52 +239,70 @@ const UsersTab = () => {
                                     </td>
                                     <td className="px-6 py-4 text-sm font-medium text-slate-500">{formatDate(u.date_joined)}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                            {u.is_active ? t('admin.user_table.active') : t('admin.user_table.banned')}
-                                        </span>
+                                        {(() => {
+                                            const isBanned = !u.is_active || (u.blocked_until && new Date(u.blocked_until) > new Date());
+                                            return (
+                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${!isBanned ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                    {!isBanned ? t('admin.user_table.active') : t('admin.user_table.banned')}
+                                                </span>
+                                            );
+                                        })()}
                                     </td>
-                                    <td className="px-6 py-4 text-center relative overflow-visible" onClick={(e) => e.stopPropagation()}>
-                                        <button onClick={(e) => { e.stopPropagation(); setOpenMenu(openMenu === u.id ? null : u.id); }} className="p-2 hover:bg-slate-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <td className="px-6 py-4 text-center relative overflow-visible">
+                                        <button 
+                                            onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                setOpenMenu(openMenu === u.id ? null : u.id); 
+                                            }} 
+                                            className="p-2 hover:bg-slate-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
                                             <MoreVertical size={16} />
                                         </button>
-                                        {openMenu === u.id && (
-                                            <div className="absolute right-6 top-10 w-48 bg-white border rounded-2xl shadow-2xl z-50 p-2 text-left animate-in fade-in zoom-in-95">
-                                                <button
-                                                    data-testid={`user-action-${u.is_active ? 'block' : 'unblock'}-${u.id}`}
-                                                    onClick={() => handleUserAction(u.id, u.is_active ? 'block' : 'unblock')}
-                                                    className={`w-full text-left px-3 py-2 rounded-xl text-sm font-bold ${u.is_active ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                                        {openMenu === u.id && (() => {
+                                            const isBanned = !u.is_active || (u.blocked_until && new Date(u.blocked_until) > new Date());
+                                            return (
+                                                <div 
+                                                    ref={menuRef}
+                                                    className="absolute right-6 top-10 w-48 bg-white border rounded-2xl shadow-2xl z-50 p-2 text-left animate-in fade-in zoom-in-95"
+                                                    onClick={(e) => e.stopPropagation()}
                                                 >
-                                                    {u.is_active ? t('admin.user_table.block') : t('admin.user_table.unblock')}
-                                                </button>
-                                                <hr className="my-2 border-slate-100" />
-                                                <button
-                                                    onClick={() => { setSelectedUser(u); setIsUserEditModalOpen(true); setOpenMenu(null); }}
-                                                    className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                                >
-                                                    <Edit size={14} /> {t('admin.user_table.edit_profile')}
-                                                </button>
-                                                <hr className="my-2 border-slate-100" />
-                                                <button
-                                                    onClick={() => handleUserAction(u.id, 'toggle_verify')}
-                                                    className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-50"
-                                                >
-                                                    {u.is_verified ? t('admin.user_table.unverify') : t('admin.user_table.verify')}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleUserAction(u.id, 'toggle_vip')}
-                                                    className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-50"
-                                                >
-                                                    {u.is_vip ? t('admin.user_table.remove_vip') : t('admin.user_table.give_vip')}
-                                                </button>
-                                                <hr className="my-2 border-slate-100" />
-                                                <button
-                                                    onClick={() => handleUserAction(u.id, 'delete')}
-                                                    className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                                >
-                                                    <Trash size={14} /> {t('admin.user_table.delete')}
-                                                </button>
-                                            </div>
-                                        )}
+                                                    <button
+                                                        data-testid={`user-action-${!isBanned ? 'block' : 'unblock'}-${u.id}`}
+                                                        onClick={(e) => { e.stopPropagation(); handleUserAction(u.id, !isBanned ? 'block' : 'unblock'); }}
+                                                        className={`w-full text-left px-3 py-2 rounded-xl text-sm font-bold ${!isBanned ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                                                    >
+                                                        {!isBanned ? t('admin.user_table.block') : t('admin.user_table.unblock')}
+                                                    </button>
+                                                    <hr className="my-2 border-slate-100" />
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setSelectedUser(u); setIsUserEditModalOpen(true); setOpenMenu(null); }}
+                                                        className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                                    >
+                                                        <Edit size={14} /> {t('admin.user_table.edit_profile')}
+                                                    </button>
+                                                    <hr className="my-2 border-slate-100" />
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleUserAction(u.id, 'toggle_verify'); }}
+                                                        className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-50"
+                                                    >
+                                                        {u.is_verified ? t('admin.user_table.unverify') : t('admin.user_table.verify')}
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleUserAction(u.id, 'toggle_vip'); }}
+                                                        className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-50"
+                                                    >
+                                                        {u.is_vip ? t('admin.user_table.remove_vip') : t('admin.user_table.give_vip')}
+                                                    </button>
+                                                    <hr className="my-2 border-slate-100" />
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleUserAction(u.id, 'delete'); }}
+                                                        className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                    >
+                                                        <Trash size={14} /> {t('admin.user_table.delete')}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })()}
                                     </td>
                                 </tr>
                             ))}
@@ -259,13 +327,15 @@ const UsersTab = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm shadow-2xl overflow-y-auto">
                     <div className="bg-white rounded-[40px] w-full max-w-4xl max-h-[90vh] overflow-y-auto relative animate-in zoom-in-95 duration-300">
                         {/* Header */}
-                        <div className="relative h-48 bg-slate-900 overflow-hidden">
+                        <div className="relative h-48 bg-slate-900">
                             <div className="absolute inset-0 bg-gradient-to-r from-primary-600/20 to-blue-600/20"></div>
                             <button onClick={() => setIsUserModalOpen(false)} className="absolute top-8 right-8 w-12 h-12 bg-white/10 hover:bg-white/20 text-white rounded-2xl flex items-center justify-center transition-all z-10"><X size={24} /></button>
-                            <div className="absolute -bottom-12 left-12 w-32 h-32 rounded-[40px] bg-white p-2 shadow-2xl">
-                                <div className="w-full h-full rounded-[32px] bg-slate-100 flex items-center justify-center text-4xl font-black text-slate-400 overflow-hidden">
-                                    {selectedUser.avatar ? <img src={selectedUser.avatar} className="w-full h-full object-cover" /> : selectedUser.first_name?.[0] || selectedUser.email[0]}
-                                </div>
+                        </div>
+
+                        {/* Avatar - Moved outside to prevent overflow clipping */}
+                        <div className="absolute top-32 left-12 w-32 h-32 rounded-[40px] bg-white p-2 shadow-2xl z-20">
+                            <div className="w-full h-full rounded-[32px] bg-slate-100 flex items-center justify-center text-4xl font-black text-slate-400 overflow-hidden">
+                                {selectedUser.avatar ? <img src={selectedUser.avatar} className="w-full h-full object-cover" /> : selectedUser.first_name?.[0] || selectedUser.email[0]}
                             </div>
                         </div>
 
@@ -324,13 +394,18 @@ const UsersTab = () => {
                                 {/* Actions Column */}
                                 <div className="space-y-6">
                                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">{t('admin.user_details.admin_actions')}</h3>
-                                    <button onClick={() => handleUserAction(selectedUser.id, selectedUser.is_active ? 'block' : 'unblock')} className={`w-full p-5 rounded-2xl flex items-center justify-between font-black transition-all ${selectedUser.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
-                                        <span className="flex items-center gap-3">
-                                            {selectedUser.is_active ? <Shield size={20} /> : <Unlock size={20} />}
-                                            {selectedUser.is_active ? t('admin.user_details.block_account') : t('admin.user_details.unblock_account')}
-                                        </span>
-                                        <ChevronRight size={18} />
-                                    </button>
+                                    {(() => {
+                                        const isBanned = !selectedUser.is_active || (selectedUser.blocked_until && new Date(selectedUser.blocked_until) > new Date());
+                                        return (
+                                            <button onClick={() => handleUserAction(selectedUser.id, !isBanned ? 'block' : 'unblock')} className={`w-full p-5 rounded-2xl flex items-center justify-between font-black transition-all ${!isBanned ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+                                                <span className="flex items-center gap-3">
+                                                    {!isBanned ? <Shield size={20} /> : <Unlock size={20} />}
+                                                    {!isBanned ? t('admin.user_details.block_account') : t('admin.user_table.unblock')}
+                                                </span>
+                                                <ChevronRight size={18} />
+                                            </button>
+                                        );
+                                    })()}
                                     <button onClick={() => setIsTempBlockModalOpen(true)} className="w-full p-5 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-between font-black hover:bg-orange-100 transition-all">
                                         <span className="flex items-center gap-3"><History size={20} /> {t('admin.user_details.temp_block')}</span>
                                         <ChevronRight size={18} />

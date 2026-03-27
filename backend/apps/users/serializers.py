@@ -49,9 +49,10 @@ class UserSerializer(serializers.ModelSerializer):
             'is_active',
             'is_staff',
             'is_superuser',
-            'date_joined'
+            'date_joined',
+            'blocked_until'
         ]
-        read_only_fields = ['id', 'date_joined', 'is_active', 'is_staff', 'is_superuser']
+        read_only_fields = ['id', 'date_joined', 'is_active', 'is_staff', 'is_superuser', 'blocked_until']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

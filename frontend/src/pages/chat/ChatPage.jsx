@@ -344,7 +344,7 @@ const ChatPage = () => {
 
             {selectedImage && (
                 <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 md:p-12 animate-in fade-in" onClick={() => setSelectedImage(null)}>
-                    <button className="absolute top-6 right-6 w-12 h-12 bg-white/10 text-white rounded-2xl hover:bg-white/20" onClick={() => setSelectedImage(null)}><X size={24} /></button>
+                    <button className="absolute top-6 right-6 w-12 h-12 bg-white/10 text-white rounded-2xl hover:bg-white/20 flex items-center justify-center" onClick={() => setSelectedImage(null)}><X size={24} /></button>
                     <img src={selectedImage} alt="Preview" className="max-w-full max-h-full object-contain rounded-lg animate-in zoom-in-95" />
                 </div>
             )}
