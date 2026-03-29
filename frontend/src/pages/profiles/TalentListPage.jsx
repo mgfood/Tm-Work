@@ -8,7 +8,13 @@ import TalentCard from '../../components/profiles/TalentCard';
 
 const TalentListPage = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+
+    const getSkillName = (skill) => {
+        if (i18n.language?.startsWith('ru') && skill.name_ru) return skill.name_ru;
+        if (i18n.language?.startsWith('tk') && skill.name_tk) return skill.name_tk;
+        return skill.name;
+    };
     const [talents, setTalents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -198,7 +204,7 @@ const TalentListPage = () => {
                                             onClick={() => toggleSkill(skill.id)}
                                             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border-2 ${selectedSkills.includes(skill.id) ? 'bg-primary-600 border-primary-600 text-white' : 'bg-white border-slate-100 text-slate-500 hover:border-slate-200 shadow-sm'}`}
                                         >
-                                            {skill.name}
+                                            {getSkillName(skill)}
                                         </button>
                                     ))}
                                 </div>

@@ -6,7 +6,9 @@ import adminService from '../../api/adminService';
 const SkillEditModal = ({ isOpen, skill, onClose, onSuccess }) => {
     const { t } = useTranslation();
     const [formData, setFormData] = useState({
-        name: ''
+        name: '',
+        name_ru: '',
+        name_tk: ''
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -14,7 +16,9 @@ const SkillEditModal = ({ isOpen, skill, onClose, onSuccess }) => {
     useEffect(() => {
         if (skill) {
             setFormData({
-                name: skill.name || ''
+                name: skill.name || '',
+                name_ru: skill.name_ru || '',
+                name_tk: skill.name_tk || ''
             });
         }
     }, [skill]);
@@ -41,7 +45,10 @@ const SkillEditModal = ({ isOpen, skill, onClose, onSuccess }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-[40px] p-8 max-w-md w-full premium-card">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">{t('admin.skill_edit.title')}</h2>
+                    <div>
+                        <h2 className="text-2xl font-bold">{t('admin.skill_edit.title')}</h2>
+                        <p className="text-xs text-slate-400 mt-1">Название (Core) — основное, техническое. RU/TK — опциональные переводы.</p>
+                    </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                         <X size={24} />
                     </button>
@@ -55,14 +62,38 @@ const SkillEditModal = ({ isOpen, skill, onClose, onSuccess }) => {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-2">{t('admin.skill_edit.name_label')}</label>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Название (Core)</label>
                         <input
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            placeholder="Technical name..."
                             required
                         />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Название (RU)</label>
+                            <input
+                                type="text"
+                                value={formData.name_ru}
+                                onChange={(e) => setFormData({ ...formData, name_ru: e.target.value })}
+                                className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder="Русское название..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Ady (TK)</label>
+                            <input
+                                type="text"
+                                value={formData.name_tk}
+                                onChange={(e) => setFormData({ ...formData, name_tk: e.target.value })}
+                                className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder="Türkmen ady..."
+                            />
+                        </div>
                     </div>
 
                     <div className="flex gap-4 pt-4">

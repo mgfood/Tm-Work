@@ -4,8 +4,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 const TalentCard = ({ talent }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+
+    const getSkillName = (skill) => {
+        if (i18n.language?.startsWith('ru') && skill.name_ru) return skill.name_ru;
+        if (i18n.language?.startsWith('tk') && skill.name_tk) return skill.name_tk;
+        return skill.name;
+    };
 
     const displayName = (talent.user.first_name || talent.user.last_name)
         ? `${talent.user.first_name || ''} ${talent.user.last_name || ''}`.trim()
@@ -77,7 +83,7 @@ const TalentCard = ({ talent }) => {
             <div className="flex-grow flex flex-wrap justify-center gap-2 mb-8">
                 {talent.skills?.slice(0, 3).map(skill => (
                     <span key={skill.id} className="px-3 py-1 bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-slate-100 group-hover:bg-white group-hover:border-primary-100 group-hover:text-primary-600 transition-all">
-                        {skill.name}
+                        {getSkillName(skill)}
                     </span>
                 ))}
                 {talent.skills?.length > 3 && (

@@ -16,7 +16,13 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
 const TalentProfilePage = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+
+    const getSkillName = (skill) => {
+        if (i18n.language?.startsWith('ru') && skill.name_ru) return skill.name_ru;
+        if (i18n.language?.startsWith('tk') && skill.name_tk) return skill.name_tk;
+        return skill.name;
+    };
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -246,7 +252,7 @@ const TalentProfilePage = () => {
                                     profile.skills.map(skill => (
                                         <div key={skill.id} className="group px-6 py-4 bg-slate-50 hover:bg-primary-600 border border-slate-100 hover:border-primary-600 text-slate-700 hover:text-white font-black text-sm rounded-2xl transition-all flex items-center gap-3 cursor-default">
                                             <div className="w-2 h-2 bg-primary-400 rounded-full group-hover:bg-white transition-colors"></div>
-                                            {skill.name}
+                                            {getSkillName(skill)}
                                         </div>
                                     ))
                                 ) : (

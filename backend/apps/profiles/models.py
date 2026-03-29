@@ -5,6 +5,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Skill(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    name_ru = models.CharField(max_length=100, blank=True, verbose_name="Название (RU)")
+    name_tk = models.CharField(max_length=100, blank=True, verbose_name="Ady (TK)")
     slug = models.CharField(max_length=100, unique=True)
 
     class Meta:

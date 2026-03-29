@@ -7,7 +7,7 @@ class SkillSerializer(serializers.ModelSerializer):
     """Serializer for Skill model"""
     class Meta:
         model = Skill
-        fields = ['id', 'name', 'slug']
+        fields = ['id', 'name', 'name_ru', 'name_tk', 'slug']
 
 
 class PortfolioItemSerializer(serializers.ModelSerializer):

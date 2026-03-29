@@ -452,10 +452,12 @@ class UserViewSet(viewsets.ModelViewSet):
             
         # Generate JWT tokens for the target user
         refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+        access['is_impersonation'] = True
         
         return Response({
             'user': UserSerializer(user).data,
-            'access': str(refresh.access_token),
+            'access': str(access),
             'refresh': str(refresh)
         })
 

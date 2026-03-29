@@ -1,5 +1,6 @@
 import React from 'react';
 import { Settings, Save, Loader2, Send, Instagram, Github, Linkedin, Trash2, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const ProfileEditForm = ({
     formData,
@@ -12,6 +13,13 @@ const ProfileEditForm = ({
     isSaving,
     t
 }) => {
+    const { i18n } = useTranslation();
+
+    const getSkillName = (skill) => {
+        if (i18n.language?.startsWith('ru') && skill.name_ru) return skill.name_ru;
+        if (i18n.language?.startsWith('tk') && skill.name_tk) return skill.name_tk;
+        return skill.name;
+    };
     return (
         <div className="premium-card p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h3 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
@@ -169,7 +177,7 @@ const ProfileEditForm = ({
                                 }}
                                 className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all ${formData.skills_ids.includes(skill.id) ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30' : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'}`}
                             >
-                                {skill.name}
+                                {getSkillName(skill)}
                             </button>
                         ))}
                     </div>
