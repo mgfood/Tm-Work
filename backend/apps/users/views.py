@@ -132,7 +132,12 @@ class LoginView(APIView):
         
         user = serializer.validated_data['user']
         
-        # Check if user is blocked
+        if user.is_deleted:
+            # Mask soft-deleted as invalid credentials to prevent email enumeration
+            return Response({
+                'error': 'Неверный email или пароль.'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
         if user.blocked_until and user.blocked_until > timezone.now():
             time_left = user.blocked_until - timezone.now()
             hours = int(time_left.total_seconds() // 3600)
@@ -225,9 +230,19 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     Admin ViewSet for user management
     """
-    queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        qs = User.objects.all().order_by('-date_joined')
+        status_filter = self.request.query_params.get('status')
+        if status_filter == 'anonymized':
+            qs = qs.filter(is_anonymized=True)
+        elif status_filter == 'deleted':
+            qs = qs.filter(is_deleted=True, is_anonymized=False)
+        elif status_filter == 'active':
+            qs = qs.filter(is_deleted=False)
+        return qs
 
     @action(detail=False, methods=['get'], url_path='stats')
     def stats(self, request):
@@ -377,16 +392,99 @@ class UserViewSet(viewsets.ModelViewSet):
         if user.is_superuser and request.user.id == user.id:
             return Response({'error': 'Cannot delete yourself'}, status=status.HTTP_400_BAD_REQUEST)
 
-        response = super().destroy(request, *args, **kwargs)
+        from apps.administration.models import log_admin_action, AdminLog
+
+        if user.is_deleted:
+            # We no longer hard-delete to keep the Anonymized 'leftovers' accessible
+            from .services import UserService
+            UserService.anonymize_user(user)
+            log_admin_action(
+                admin=request.user,
+                action_type=AdminLog.ActionType.DELETE_USER if hasattr(AdminLog.ActionType, 'DELETE_USER') else AdminLog.ActionType.BLOCK_USER,
+                target_info=f"User ID: {user_id} ({email})",
+                comment="User permanently scrubbed (anonymized) by administrator"
+            )
+            return Response(
+                {'status': 'Пользовательские данные безвозвратно стерты (анонимизированы) согласно политике. Остаток сохранен для финансового аудита.'}, 
+                status=status.HTTP_200_OK
+            )
+
+        # Perform soft delete instead of physical delete (FinTech requirement)
+        user.is_deleted = True
+        user.is_active = False
+        user.deleted_at = timezone.now()
+        
+        if not user.email.startswith('deleted_'):
+            user.email = f"deleted_{user.id}_{user.email}"
+            
+        user.save()
+        
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.DELETE_USER if hasattr(AdminLog.ActionType, 'DELETE_USER') else AdminLog.ActionType.BLOCK_USER,
+            target_info=f"User ID: {user_id} ({email})",
+            comment="User soft-deleted by administrator"
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'], url_path='impersonate')
+    def impersonate(self, request, pk=None):
+        """ Allow superuser to generate access tokens and login as the targeted user """
+        if not request.user.is_superuser:
+            return Response({'error': 'Только суперадмины могут входить в чужие аккаунты'}, status=status.HTTP_403_FORBIDDEN)
+            
+        user = self.get_object()
+        
+        if getattr(user, 'is_anonymized', False):
+            return Response({'error': 'Невозможно войти в полностью анонимизированный аккаунт, данные уже стерты'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from apps.administration.models import log_admin_action, AdminLog
+        log_admin_action(
+            admin=request.user,
+            action_type=AdminLog.ActionType.UPDATE_USER,
+            target_info=f"User ID: {user.id} ({user.email})",
+            comment="Admin impersonated user session"
+        )
+        
+        # We need to manually sync their role before generating token if they are VIP, etc
+        if hasattr(user, 'profile'):
+            user.profile.sync_vip_status()
+            
+        # Generate JWT tokens for the target user
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            'user': UserSerializer(user).data,
+            'access': str(refresh.access_token),
+            'refresh': str(refresh)
+        })
+
+    @action(detail=True, methods=['post'], url_path='restore')
+    def restore(self, request, pk=None):
+        user = self.get_object()
+        
+        if not user.is_deleted:
+            return Response({'error': 'Пользователь не удален'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        user.is_deleted = False
+        user.is_active = True
+        user.deleted_at = None
+        
+        # Remove the deleted_<id>_ prefix if it exists
+        prefix = f"deleted_{user.id}_"
+        if user.email.startswith(prefix):
+            user.email = user.email[len(prefix):]
+            
+        user.save()
         
         from apps.administration.models import log_admin_action, AdminLog
         log_admin_action(
             admin=request.user,
-            action_type=AdminLog.ActionType.BLOCK_USER, # We don't have DELETE_USER yet, use block for now or add it
-            target_info=f"User ID: {user_id} ({email})",
-            comment="User permanently deleted from system"
+            action_type=AdminLog.ActionType.UPDATE_USER,
+            target_info=f"User ID: {user.id} ({user.email})",
+            comment="User restored by administrator"
         )
-        return response
+        return Response({'status': 'Пользователь восстановлен'})
 
     @action(detail=True, methods=['post'], url_path='toggle-verify')
     def toggle_verify(self, request, pk=None):

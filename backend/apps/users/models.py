@@ -102,6 +102,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(null=True, blank=True)
     
+    is_deleted = models.BooleanField(default=False)
+    is_anonymized = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     blocked_until = models.DateTimeField(null=True, blank=True, help_text="User is blocked until this time")
     block_reason = models.TextField(blank=True, help_text="Reason for blocking")
     blocked_users = models.ManyToManyField('self', symmetrical=False, related_name='blocked_by', blank=True)
@@ -121,9 +124,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
     def get_full_name(self):
+        if self.is_deleted:
+            return "Удаленный Аккаунт"
         return f"{self.first_name} {self.last_name}".strip() or self.email
 
     def get_short_name(self):
+        if self.is_deleted:
+            return "Удаленный"
         return self.first_name or self.email
 
     def has_role(self, role_name):

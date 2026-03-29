@@ -70,6 +70,11 @@ const profilesService = {
     unblockUser: async (userId) => {
         const response = await apiClient.post(`/profiles/${userId}/unblock/`);
         return response.data;
+    },
+
+    deleteAccount: async () => {
+        const response = await apiClient.delete('/profiles/delete-account/');
+        return response.data;
     }
 };
 

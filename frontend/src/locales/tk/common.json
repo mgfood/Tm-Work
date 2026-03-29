@@ -49,5 +49,14 @@
   "until": "Çenli",
   "user": "Ulanyjy",
   "view": "Görmek",
-  "confirm_action": "Hereketi tassyklamak"
+  "confirm_action": "Bendi tassyklamak",
+  "first_name": "Ady",
+  "last_name": "Familiýasy",
+  "category": "Kategoriýa",
+  "select_category": "Kategoriýany saýlaň",
+  "delete_account": "Hasaby poz",
+  "delete_account_confirm": "Hasabyňyzy hemişelik pozmak isleýärsiňizmi? Bu hereketi yzyna gaýtaryp bolmaz, ähli maglumatlaryňyz pozular.",
+  "delete_account_error": "Hasaby pozmakda säwlik ýüze çykdy",
+  "account_deleted": "Hasap üstünlikli pozuldy",
+  "languages": "Diller"
 }

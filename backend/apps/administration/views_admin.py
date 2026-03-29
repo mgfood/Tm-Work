@@ -133,3 +133,45 @@ class RevenueStatsView(APIView):
         
         serializer = RevenueStatsSerializer(data)
         return Response(serializer.data)
+
+
+class SystemSettingsView(APIView):
+    """
+    GET /api/v1/admin/settings/
+    PUT /api/v1/admin/settings/
+    Manage system-wide configuration (SuperAdmin only)
+    """
+    permission_classes = [IsSuperAdmin]
+
+    def get(self, request):
+        from .models import SystemSetting
+        setting = SystemSetting.get_settings()
+        from .serializers_admin import SystemSettingSerializer
+        serializer = SystemSettingSerializer(setting)
+        return Response(serializer.data)
+
+    def put(self, request):
+        from .models import SystemSetting
+        setting = SystemSetting.get_settings()
+        old_auto_delete = setting.auto_delete_enabled
+        
+        from .serializers_admin import SystemSettingSerializer
+        serializer = SystemSettingSerializer(setting, data=request.data, partial=True)
+        if serializer.is_valid():
+            new_setting = serializer.save()
+            
+            # If auto_delete was turned ON just now, reset timers for currently deleted users
+            if not old_auto_delete and new_setting.auto_delete_enabled:
+                from apps.users.models import User
+                from django.db.models import Q
+                
+                # Update deleted_at to NOW for users who are currently soft-deleted but not yet anonymized.
+                # A user is anonymized if their first_name is empty (based on cleanup script logic).
+                User.objects.filter(
+                    is_deleted=True,
+                ).exclude(
+                    first_name=''
+                ).update(deleted_at=timezone.now())
+                
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

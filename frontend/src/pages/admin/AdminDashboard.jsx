@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     Users, Briefcase, ShieldAlert, BarChart3,
     List, CreditCard, Award, Megaphone,
-    History, Gavel, UserCog, DollarSign
+    History, Gavel, UserCog, DollarSign, Settings
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
@@ -21,6 +21,7 @@ import BroadcastTab from '../../components/admin/tabs/BroadcastTab';
 import VIPSettingsTab from '../../components/admin/tabs/VIPSettingsTab';
 import StaffManagementTab from './StaffManagementTab';
 import RevenueTab from './RevenueTab';
+import SystemSettingsTab from '../../components/admin/tabs/SystemSettingsTab';
 
 const AdminDashboard = () => {
     const { user, loading: authLoading } = useAuth();
@@ -103,6 +104,17 @@ const AdminDashboard = () => {
                             <Award size={18} />
                             {t('admin.vip_settings')}
                         </button>
+                        <button
+                            onClick={() => setActiveTab('settings')}
+                            data-testid="admin-tab-settings"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${activeTab === 'settings'
+                                ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20'
+                                : 'hover:bg-slate-800 hover:text-white'
+                                }`}
+                        >
+                            <Settings size={18} />
+                            Настройки системы
+                        </button>
                     </>
                 )}
             </aside>
@@ -123,6 +135,7 @@ const AdminDashboard = () => {
                         {activeTab === 'vip_settings' && t('admin.vip_settings')}
                         {activeTab === 'staff' && t('admin.staff_mgmt')}
                         {activeTab === 'revenue' && t('admin.revenue_mgmt')}
+                        {activeTab === 'settings' && 'Настройки Системы'}
                     </h1>
                     <p className="text-slate-500">{t('admin.subtitle')}</p>
                 </header>
@@ -140,6 +153,7 @@ const AdminDashboard = () => {
                     {activeTab === 'vip_settings' && <VIPSettingsTab />}
                     {activeTab === 'staff' && <StaffManagementTab />}
                     {activeTab === 'revenue' && <RevenueTab />}
+                    {activeTab === 'settings' && <SystemSettingsTab />}
                 </div>
             </main>
         </div >

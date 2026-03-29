@@ -1,10 +1,12 @@
 import React from 'react';
-import { Settings, Save, Loader2, Send, Instagram, Github, Linkedin } from 'lucide-react';
+import { Settings, Save, Loader2, Send, Instagram, Github, Linkedin, Trash2, User } from 'lucide-react';
 
 const ProfileEditForm = ({
     formData,
     setFormData,
     allSkills,
+    allCategories,
+    handleDeleteAccount,
     handleProfileUpdate,
     setIsEditing,
     isSaving,
@@ -17,6 +19,38 @@ const ProfileEditForm = ({
             </h3>
 
             <form onSubmit={handleProfileUpdate} className="space-y-8">
+                {/* Names Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-1">{t('common.first_name')}</label>
+                        <div className="relative">
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                            <input
+                                name="first_name"
+                                type="text"
+                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-primary-500 transition-all outline-none font-medium"
+                                placeholder={t('common.first_name')}
+                                value={formData.first_name}
+                                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-1">{t('common.last_name')}</label>
+                        <div className="relative">
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                            <input
+                                name="last_name"
+                                type="text"
+                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-primary-500 transition-all outline-none font-medium"
+                                placeholder={t('common.last_name')}
+                                value={formData.last_name}
+                                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-1">{t('profile.profession_label')}</label>
@@ -29,6 +63,23 @@ const ProfileEditForm = ({
                             onChange={(e) => setFormData({ ...formData, profession: e.target.value })}
                         />
                     </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-1">{t('common.category')}</label>
+                        <select
+                            name="category_id"
+                            className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-primary-500 transition-all outline-none font-bold"
+                            value={formData.category_id}
+                            onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                        >
+                            <option value="">{t('common.select_category')}</option>
+                            {allCategories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-slate-700 ml-1">{t('profile.location_label')}</label>
                         <input
@@ -51,6 +102,9 @@ const ProfileEditForm = ({
                             onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                         />
                     </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-bold text-slate-700 ml-1">{t('profile.stats.rate')} (TMT)</label>
@@ -74,6 +128,17 @@ const ProfileEditForm = ({
                                 onChange={(e) => setFormData({ ...formData, experience_years: e.target.value })}
                             />
                         </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-1">{t('profile.languages')}</label>
+                        <input
+                            name="languages"
+                            type="text"
+                            className="w-full p-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-primary-500 transition-all outline-none font-medium"
+                            placeholder="Turkmen, Russian, English"
+                            value={formData.languages}
+                            onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
+                        />
                     </div>
                 </div>
 
@@ -136,21 +201,30 @@ const ProfileEditForm = ({
                     </div>
                 </div>
 
-                <div className="flex gap-4 pt-4">
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="flex-grow btn-primary py-5 rounded-2xl text-lg flex items-center justify-center gap-3 shadow-2xl shadow-primary-600/30"
-                        aria-label={t('common.save_changes')}
-                    >
-                        {isSaving ? <Loader2 className="animate-spin" /> : <><Save size={24} /> {t('common.save_changes')}</>}
-                    </button>
+                <div className="flex flex-col md:flex-row gap-4 pt-8 border-t border-slate-100">
+                    <div className="flex gap-4 flex-grow">
+                        <button
+                            type="submit"
+                            disabled={isSaving}
+                            className="flex-grow btn-primary py-5 rounded-2xl text-lg flex items-center justify-center gap-3 shadow-2xl shadow-primary-600/30"
+                            aria-label={t('common.save_changes')}
+                        >
+                            {isSaving ? <Loader2 className="animate-spin" /> : <><Save size={24} /> {t('common.save_changes')}</>}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsEditing(false)}
+                            className="px-10 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all border border-slate-200"
+                        >
+                            {t('common.cancel')}
+                        </button>
+                    </div>
                     <button
                         type="button"
-                        onClick={() => setIsEditing(false)}
-                        className="px-10 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all border border-slate-200"
+                        onClick={handleDeleteAccount}
+                        className="px-8 py-5 bg-red-50 text-red-600 font-extrabold rounded-2xl hover:bg-red-100 transition-all border-2 border-red-100 flex items-center justify-center gap-2"
                     >
-                        {t('common.cancel')}
+                        <Trash2 size={20} /> {t('profile.delete_account')}
                     </button>
                 </div>
             </form>

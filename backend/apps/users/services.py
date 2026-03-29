@@ -140,6 +140,87 @@ class UserService:
         )
         return user.profile.is_vip
 
+    @staticmethod
+    def anonymize_user(user):
+        """
+        Safely scrubs personal identifiers and user-generated content for a deleted account,
+        respecting the granular settings defined in SystemSetting.
+        This leaves the actual User and Transaction records intact for financial integrity,
+        preventing ProtectedError issues.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        from apps.chat.models import Message
+        from apps.administration.models import SystemSetting
+
+        try:
+            settings = SystemSetting.get_settings()
+            
+            with transaction.atomic():
+                # 1. Clean User model
+                update_fields = []
+                if settings.delete_name:
+                    user.first_name = ''
+                    user.last_name = ''
+                    update_fields.extend(['first_name', 'last_name'])
+                
+                if settings.delete_email:
+                    # Obfuscate email completely instead of just prepending deleted_<id>_
+                    user.email = f"deleted_{user.id}@archived.local"
+                    update_fields.append('email')
+                    
+                user.is_anonymized = True
+                update_fields.append('is_anonymized')
+                    
+                if update_fields:
+                    user.save(update_fields=update_fields)
+
+                # 2. Clean Profile model
+                if hasattr(user, 'profile'):
+                    profile = user.profile
+                    
+                    if settings.delete_avatar and profile.avatar:
+                        profile.avatar.delete(save=False)
+                        profile.avatar = None
+                    
+                    if settings.delete_bio:
+                        profile.profession = ''
+                        profile.bio = ''
+                        profile.phone_number = ''
+                        profile.location = ''
+                        profile.hourly_rate = None
+                    
+                    if settings.delete_skills:
+                        profile.experience_years = 0
+                        profile.languages = ''
+                        profile.skills.clear()
+                        
+                    if settings.delete_social_links:
+                        profile.social_links = {}
+                    
+                    # Delete portfolio items
+                    if settings.delete_portfolio:
+                        for item in profile.portfolio_items.all():
+                            if item.image:
+                                item.image.delete(save=False)
+                            item.delete()
+                    
+                    profile.save()
+
+                # 3. Clean Chat Messages
+                if settings.delete_messages:
+                    messages = Message.objects.filter(sender=user)
+                    for msg in messages:
+                        if msg.attachment:
+                            msg.attachment.delete(save=False)
+                        msg.delete()
+
+                logger.info(f"Successfully anonymized user ID {user.id} (deleted at {user.deleted_at})")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to anonymize user {user.id}: {str(e)}")
+            raise e
+
 class AuthService:
     @staticmethod
     def request_password_reset(email):

@@ -12,6 +12,7 @@ const TalentListPage = () => {
     const [talents, setTalents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     
     // Filter states
     const [categories, setCategories] = useState([]);
@@ -38,12 +39,18 @@ const TalentListPage = () => {
         fetchFilters();
     }, []);
 
+    // Debouncing for search
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
     useEffect(() => {
         const fetchTalents = async () => {
             try {
                 setLoading(true);
                 const params = {
-                    search: searchTerm,
+                    search: debouncedSearch,
                     category: selectedCategory,
                     min_rating: selectedMinRating,
                     skills: selectedSkills.join(','),
@@ -59,12 +66,8 @@ const TalentListPage = () => {
             }
         };
 
-        const debounceTimer = setTimeout(() => {
-            fetchTalents();
-        }, 300);
-
-        return () => clearTimeout(debounceTimer);
-    }, [searchTerm, selectedCategory, selectedMinRating, selectedSkills, sortBy]);
+        fetchTalents();
+    }, [debouncedSearch, selectedCategory, selectedMinRating, selectedSkills, sortBy]);
 
     const toggleSkill = (skillId) => {
         setSelectedSkills(prev => 

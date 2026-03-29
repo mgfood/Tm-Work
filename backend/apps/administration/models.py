@@ -42,3 +42,37 @@ def log_admin_action(admin, action_type, target_info, comment=""):
         target_info=target_info,
         comment=comment
     )
+
+class SystemSetting(models.Model):
+    """Singleton model for platform dynamic settings"""
+    auto_delete_enabled = models.BooleanField(
+        default=True, 
+        help_text="If enabled, soft-deleted accounts will be automatically permanently anonymized."
+    )
+    retention_days = models.PositiveIntegerField(
+        default=30, 
+        help_text="Number of days to keep a soft-deleted account before anonymizing."
+    )
+
+    # Granular Privacy Deletion Settings
+    delete_name = models.BooleanField(default=True, help_text="Erase first and last name")
+    delete_email = models.BooleanField(default=False, help_text="Completely obfuscate email address (e.g., deleted_1_user@domain becomes deleted_1@archived.local)")
+    delete_bio = models.BooleanField(default=True, help_text="Erase profile biography, profession, location, and phone number")
+    delete_skills = models.BooleanField(default=True, help_text="Remove skills, languages, and experience years")
+    delete_social_links = models.BooleanField(default=True, help_text="Remove linked social network profiles")
+    delete_avatar = models.BooleanField(default=True, help_text="Delete profile avatar from storage")
+    delete_portfolio = models.BooleanField(default=True, help_text="Delete all portfolio items and their media")
+    delete_messages = models.BooleanField(default=True, help_text="Delete all chat messages sent by the user (including attachments)")
+
+    class Meta:
+        db_table = 'system_settings'
+        verbose_name = _('System Setting')
+        verbose_name_plural = _('System Settings')
+
+    @classmethod
+    def get_settings(cls):
+        setting, _ = cls.objects.get_or_create(id=1)
+        return setting
+
+    def __str__(self):
+        return "Global System Settings"

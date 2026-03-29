@@ -14,4 +14,5 @@ urlpatterns = [
     path('staff/', views_admin.StaffListView.as_view(), name='staff-list'),
     path('assign-role/', views_admin.AssignAdminRoleView.as_view(), name='assign-role'),
     path('revenue/', views_admin.RevenueStatsView.as_view(), name='revenue-stats'),
+    path('settings/', views_admin.SystemSettingsView.as_view(), name='system-settings'),
 ]

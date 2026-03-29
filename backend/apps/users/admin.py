@@ -18,16 +18,17 @@ class RoleAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ['email', 'first_name', 'last_name', 'is_active', 'is_staff', 'date_joined']
-    list_filter = ['is_active', 'is_staff', 'is_superuser', 'date_joined']
+    list_display = ['email', 'first_name', 'last_name', 'is_active', 'is_deleted', 'date_joined']
+    list_filter = ['is_active', 'is_deleted', 'is_staff', 'is_superuser', 'date_joined']
     search_fields = ['email', 'first_name', 'last_name']
     ordering = ['-date_joined']
-    filter_horizontal = ['roles']  # Удобный интерфейс для M2M
+    filter_horizontal = ['roles']
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal Info', {'fields': ('first_name', 'last_name', 'roles')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Status', {'fields': ('is_active', 'is_deleted', 'deleted_at', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Blocks', {'fields': ('blocked_until', 'block_reason', 'blocked_users')}),
         ('Important Dates', {'fields': ('last_login', 'date_joined')}),
     )
     
@@ -38,4 +39,4 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
     
-    readonly_fields = ['date_joined', 'last_login']
+    readonly_fields = ['date_joined', 'last_login', 'deleted_at']

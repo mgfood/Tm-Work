@@ -19,6 +19,11 @@ const JobListPage = () => {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [minBudget, setMinBudget] = useState('');
     const [maxBudget, setMaxBudget] = useState('');
+    
+    // Debounced states for server-side search
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [debouncedMinBudget, setDebouncedMinBudget] = useState('');
+    const [debouncedMaxBudget, setDebouncedMaxBudget] = useState('');
 
     useEffect(() => {
         jobsService.getCategories().then(data => {
@@ -26,17 +31,36 @@ const JobListPage = () => {
         }).catch(console.error);
     }, []);
 
+    // Debouncing logic
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedMinBudget(minBudget), 500);
+        return () => clearTimeout(timer);
+    }, [minBudget]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedMaxBudget(maxBudget), 500);
+        return () => clearTimeout(timer);
+    }, [maxBudget]);
+
     useEffect(() => {
         const fetchJobs = async () => {
             try {
                 setLoading(true);
-                const data = await jobsService.getJobs({
+                const params = {
                     status: 'PUBLISHED',
-                    category: selectedCategory
-                });
+                    category: selectedCategory,
+                    search: debouncedSearch,
+                    min_budget: debouncedMinBudget,
+                    max_budget: debouncedMaxBudget
+                };
+                const data = await jobsService.getJobs(params);
                 setJobs(data.results || data);
             } catch (err) {
-                // 3. Перевод ошибки
                 setError(t('jobs.loadError'));
                 console.error(err);
             } finally {
@@ -44,15 +68,9 @@ const JobListPage = () => {
             }
         };
         fetchJobs();
-    }, [selectedCategory, t]);
+    }, [selectedCategory, debouncedSearch, debouncedMinBudget, debouncedMaxBudget, t]);
 
-    const filteredJobs = jobs.filter(job => {
-        const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.description.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesMin = !minBudget || job.budget >= parseFloat(minBudget);
-        const matchesMax = !maxBudget || job.budget <= parseFloat(maxBudget);
-        return matchesSearch && matchesMin && matchesMax;
-    });
+    const jobsToDisplay = jobs;
 
     return (
         <div className="max-w-7xl mx-auto px-6 py-12">
@@ -163,14 +181,14 @@ const JobListPage = () => {
                         <div className="premium-card p-12 text-center text-red-500">
                             {error}
                         </div>
-                    ) : filteredJobs.length === 0 ? (
+                    ) : jobsToDisplay.length === 0 ? (
                         <div className="premium-card p-12 text-center">
                             <Briefcase size={48} className="mx-auto text-slate-300 mb-4" />
                             <h3 className="text-xl font-bold text-slate-700">{t('jobs.notFound')}</h3>
                             <p className="text-slate-500 mt-2">{t('jobs.tryChangingFilters')}</p>
                         </div>
                     ) : (
-                        filteredJobs.map(job => (
+                        jobsToDisplay.map(job => (
                             <Link
                                 key={job.id}
                                 to={`/jobs/${job.id}`}

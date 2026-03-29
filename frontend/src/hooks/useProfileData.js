@@ -8,6 +8,8 @@ import proposalsService from '../api/proposalsService';
 import jobsService from '../api/jobsService';
 import authService from '../api/authService';
 
+import adminService from '../api/adminService';
+
 export const useProfileData = () => {
     const { t, i18n } = useTranslation();
     const { user, logout, refreshUser, currentRole, switchRole } = useAuth();
@@ -23,9 +25,12 @@ export const useProfileData = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [allSkills, setAllSkills] = useState([]);
+    const [allCategories, setAllCategories] = useState([]);
 
     // Form states
     const [formData, setFormData] = useState({
+        first_name: '',
+        last_name: '',
         profession: '',
         bio: '',
         location: '',
@@ -34,6 +39,7 @@ export const useProfileData = () => {
         languages: '',
         hourly_rate: '',
         experience_years: '',
+        category_id: '',
         skills_ids: [],
         social_links: {
             telegram: '',
@@ -52,21 +58,24 @@ export const useProfileData = () => {
     const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
     const [editingPortfolioId, setEditingPortfolioId] = useState(null);
 
-    const fetchInitialData = useCallback(async () => {
+    const fetchInitialData = useCallback(async (isRefresh = false) => {
         if (!user) return;
         try {
-            setIsLoading(true);
-            const [profileData, skillsData, portfolioData, jobsData, myProposalsData, receivedProposalsData] = await Promise.all([
+            if (!isRefresh) setIsLoading(true);
+            const [profileData, skillsData, portfolioData, jobsData, myProposalsData, receivedProposalsData, categoriesData] = await Promise.all([
                 profilesService.getMyProfile(),
                 profilesService.getAllSkills().catch(() => ({ results: [] })),
                 profilesService.getPortfolioItems(user?.id).catch(() => ({ results: [] })),
                 jobsService.getMyJobs(user?.id).catch(() => ({ results: [] })),
                 proposalsService.getSentProposals().catch(() => ({ results: [] })),
-                proposalsService.getReceivedProposals().catch(() => ({ results: [] }))
+                proposalsService.getReceivedProposals().catch(() => ({ results: [] })),
+                adminService.getCategories().catch(() => ({ results: [] }))
             ]);
 
             setProfile(profileData);
             setFormData({
+                first_name: profileData.first_name || '',
+                last_name: profileData.last_name || '',
                 profession: profileData.profession || '',
                 bio: profileData.bio || '',
                 location: profileData.location || '',
@@ -75,10 +84,12 @@ export const useProfileData = () => {
                 languages: profileData.languages || '',
                 hourly_rate: profileData.hourly_rate || '',
                 experience_years: profileData.experience_years || '',
+                category_id: profileData.category?.id || '',
                 skills_ids: profileData.skills?.map(s => s.id) || [],
                 social_links: profileData.social_links || { telegram: '', instagram: '', github: '', linkedin: '' }
             });
             setAllSkills(skillsData.results || skillsData);
+            setAllCategories(categoriesData.results || categoriesData);
             setPortfolioItems(portfolioData.results || portfolioData);
 
             const jobsList = jobsData.results || jobsData;
@@ -91,13 +102,33 @@ export const useProfileData = () => {
             console.error('Failed to fetch profile data', err);
             showToast(t('profile.load_error'), 'error');
         } finally {
-            setIsLoading(false);
+            if (!isRefresh) setIsLoading(false);
         }
-    }, [user, t, showToast]);
+    }, [user?.id, t, showToast]); // Only depend on user.id, not the whole user object
 
     useEffect(() => {
         fetchInitialData();
     }, [fetchInitialData]);
+
+    const handleDeleteAccount = async () => {
+        const isConfirmed = await confirm({
+            title: t('common.confirm_action'),
+            message: t('profile.delete_account_confirm'),
+            variant: 'danger'
+        });
+        if (!isConfirmed) return;
+        try {
+            setIsSaving(true);
+            await profilesService.deleteAccount();
+            showToast(t('profile.account_deleted'), 'success');
+            logout();
+            window.location.href = '/';
+        } catch (err) {
+            showToast(t('profile.delete_account_error'), 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const handleAvatarChange = async (e) => {
         const file = e.target.files[0];
@@ -140,6 +171,12 @@ export const useProfileData = () => {
 
     const handleProfileUpdate = async (e) => {
         if (e) e.preventDefault();
+        
+        if (!formData.first_name || formData.first_name.trim() === '') {
+            showToast('Поле "Имя" не может быть пустым', 'error');
+            return false;
+        }
+
         try {
             setIsSaving(true);
             const submissionData = { ...formData };
@@ -327,6 +364,8 @@ export const useProfileData = () => {
         handleDeleteJob,
         handleProposalAction,
         handleAcceptProposal,
+        handleDeleteAccount,
+        allCategories,
         currentRole,
         switchRole,
         t,

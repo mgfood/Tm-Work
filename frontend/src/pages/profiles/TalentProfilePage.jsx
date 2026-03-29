@@ -153,20 +153,28 @@ const TalentProfilePage = () => {
 
                                 <div className="space-y-3">
                                     {user?.id !== profile.user.id ? (
-                                        <button
-                                            onClick={async () => {
-                                                if (!user) { navigate('/login'); return; }
-                                                try {
-                                                    const thread = await chatService.getOrCreateThread(profile.user.id, 'PERSONAL');
-                                                    navigate(`/chat/${thread.id}`);
-                                                } catch (e) {
-                                                    showToast(e.response?.data?.error || t('profile.chatError'), 'error');
-                                                }
-                                            }}
-                                            className="w-full btn-primary py-5 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary-600/20 active:scale-95 transition-all text-lg"
-                                        >
-                                            <MessageSquare size={22} /> {t('profile.sendMessage')}
-                                        </button>
+                                        user ? (
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        const thread = await chatService.getOrCreateThread(profile.user.id, 'PERSONAL');
+                                                        navigate(`/chat/${thread.id}`);
+                                                    } catch (e) {
+                                                        showToast(e.response?.data?.error || t('profile.chatError'), 'error');
+                                                    }
+                                                }}
+                                                className="w-full btn-primary py-5 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary-600/20 active:scale-95 transition-all text-lg"
+                                            >
+                                                <MessageSquare size={22} /> {t('profile.sendMessage')}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => navigate('/register')}
+                                                className="w-full bg-gradient-to-r from-primary-600 to-blue-600 hover:from-primary-700 hover:to-blue-700 text-white py-5 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary-600/30 active:scale-95 transition-all text-lg font-bold"
+                                            >
+                                                <User size={22} /> {t('common.register', 'Регистрация')}
+                                            </button>
+                                        )
                                     ) : (
                                         <Link to="/settings/profile" className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-5 rounded-2xl flex items-center justify-center gap-3 font-black text-sm transition-all">
                                             <User size={20} /> {t('profile.editMyProfile')}
@@ -218,7 +226,7 @@ const TalentProfilePage = () => {
                     {/* Main Content Area */}
                     <main className="flex-grow space-y-12 pb-24">
                         {/* Bio / About */}
-                        <section className="bg-white rounded-[40px] p-10 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
+                        <section className={`bg-white rounded-[40px] p-10 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden transition-all duration-700 ${!user ? 'blur-[4px] select-none pointer-events-none grayscale-[50%]' : ''}`}>
                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary-600/5 rounded-bl-[100px] -mr-8 -mt-8"></div>
                             <h2 className="text-sm font-black text-primary-600 uppercase tracking-[0.2em] mb-8 flex items-center gap-4">
                                 <Award size={20} /> {t('profile.aboutSpecialist')}
@@ -275,7 +283,7 @@ const TalentProfilePage = () => {
 
                         {/* Portfolio */}
                         {portfolioItems.length > 0 && (
-                            <section>
+                            <section className={`relative transition-all duration-700 ${!user ? 'blur-[4px] select-none pointer-events-none grayscale-[50%]' : ''}`}>
                                 <div className="flex justify-between items-end mb-8">
                                     <h2 className="text-sm font-black text-primary-600 uppercase tracking-[0.2em] flex items-center gap-4">
                                         <ImageIcon size={20} /> {t('profile.portfolio')}
@@ -312,7 +320,7 @@ const TalentProfilePage = () => {
                         )}
 
                         {/* Reviews */}
-                        <section className="bg-white rounded-[40px] p-10 shadow-xl shadow-slate-200/50 border border-slate-100">
+                        <section className={`bg-white rounded-[40px] p-10 shadow-xl shadow-slate-200/50 border border-slate-100 relative transition-all duration-700 ${!user ? 'blur-[4px] select-none pointer-events-none grayscale-[50%]' : ''}`}>
                             <div className="flex justify-between items-center mb-10">
                                 <h2 className="text-sm font-black text-primary-600 uppercase tracking-[0.2em] flex items-center gap-4">
                                     <MessageSquare size={20} /> {t('profile.reviews')}
@@ -335,6 +343,34 @@ const TalentProfilePage = () => {
                                 )}
                             </div>
                         </section>
+                        
+                        {/* Teaser Overlay for Guests */}
+                        {!user && (
+                            <div className="fixed inset-0 z-50 pointer-events-none flex flex-col items-center justify-center p-6">
+                                {/* The background is not blurred globally to preserve the top header visibility, just a subtle dark gradient at bottom */}
+                                <div className="absolute inset-x-0 bottom-0 top-[40%] bg-gradient-to-t from-slate-50/90 to-transparent pointer-events-auto"></div>
+                                <div className="bg-white/90 backdrop-blur-2xl p-10 rounded-[40px] shadow-2xl max-w-lg w-full text-center border-2 border-white pointer-events-auto animate-in fade-in slide-in-from-bottom-10 duration-700 relative z-10 m-auto">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary-600/5 to-blue-600/5 rounded-[40px]"></div>
+                                    <div className="relative">
+                                        <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-blue-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-primary-600/20 transform -rotate-6">
+                                            <View size={36} className="rotate-3" />
+                                        </div>
+                                        <h2 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">{t('profile.teaserTitle', 'Полный доступ')}</h2>
+                                        <p className="text-slate-600 font-medium leading-relaxed mb-8">
+                                            {t('profile.teaserDesc', 'Зарегистрируйтесь, чтобы увидеть полное портфолио специалиста, прочитать все отзывы клиентов и начать безопасное сотрудничество на платформе.')}
+                                        </p>
+                                        <div className="space-y-4">
+                                            <button onClick={() => navigate('/register')} className="w-full bg-gradient-to-r from-primary-600 to-blue-600 hover:from-primary-700 hover:to-blue-700 text-white py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-primary-600/30 font-bold transition-all hover:scale-[1.02] active:scale-95 text-lg">
+                                                {t('common.register', 'Регистрация')}
+                                            </button>
+                                            <button onClick={() => navigate('/login')} className="w-full bg-white hover:bg-slate-50 text-slate-700 border-2 border-slate-100 py-4 rounded-2xl font-bold transition-all hover:border-slate-300">
+                                                {t('common.login', 'Уже есть аккаунт? Войти')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </main>
                 </div>
             </div>

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'corsheaders',
     
     'apps.users',
+    'apps.core',
     'apps.profiles',
     'apps.jobs',
     'apps.proposals',
@@ -157,6 +158,9 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='no-reply@tmwork.tm')
 SYSTEM_WALLET_EMAIL = env('SYSTEM_WALLET_EMAIL', default='system@tmwork.tm')
+
+# Account Deletion Settings
+ACCOUNT_RETENTION_DAYS = env.int('ACCOUNT_RETENTION_DAYS', default=30)
 
 # Logging Configuration
 LOGGING = {

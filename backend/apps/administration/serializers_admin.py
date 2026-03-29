@@ -54,3 +54,14 @@ class RevenueStatsSerializer(serializers.Serializer):
     month_revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
     total_transactions = serializers.IntegerField()
     system_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+from .models import SystemSetting
+
+class SystemSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemSetting
+        fields = [
+            'auto_delete_enabled', 'retention_days',
+            'delete_name', 'delete_email', 'delete_bio', 'delete_skills',
+            'delete_social_links', 'delete_avatar', 'delete_portfolio', 'delete_messages'
+        ]

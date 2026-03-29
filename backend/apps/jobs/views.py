@@ -2,14 +2,13 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db import models
+from django.db.models import Count, Q
 from .models import Job, JobFile, Category
 from .serializers import JobSerializer, JobFileSerializer, CategorySerializer
 from .services import JobService
+from .search import smart_filter_jobs  # New import
 from apps.users.permissions import IsClient, IsJobOwner
-from django.db import models # Added this import for models.Q
-
-from django.db.models import Count, Q
-from .models import Job, JobFile, Category
 
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
@@ -50,14 +49,62 @@ class JobViewSet(viewsets.ModelViewSet):
     serializer_class = JobSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        # --- Optional filters (applied before search to keep it scoped) ---
+        min_budget = request.query_params.get('min_budget')
+        max_budget = request.query_params.get('max_budget')
+        
+        if min_budget:
+            try:
+                queryset = queryset.filter(budget__gte=float(min_budget))
+            except (ValueError, TypeError):
+                pass
+        
+        if max_budget:
+            try:
+                queryset = queryset.filter(budget__lte=float(max_budget))
+            except (ValueError, TypeError):
+                pass
+
+        search_query = request.query_params.get('search', '').strip()
+
+        if search_query:
+            # Apply fuzzy search logic
+            jobs_list = smart_filter_jobs(queryset, search_query)
+            
+            # Manual pagination for the list result
+            page = self.paginate_queryset(jobs_list)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            serializer = self.get_serializer(jobs_list, many=True)
+            return Response(serializer.data)
+
+        # Standard queryset behavior (with pagination)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def get_queryset(self):
         """
         Job visibility logic:
-        1. Drafts are ONLY visible to their creators (and staff).
-        2. In 'list' action, drafts are hidden unless filtering by client (profile view).
+        1. Hide jobs from deleted clients (unless admin).
+        2. Drafts are ONLY visible to their creators (and staff).
+        3. In 'list' action, drafts are hidden unless filtering by client (profile view).
         """
         user = self.request.user
-        queryset = Job.objects.all()
+        queryset = Job.objects.select_related('client', 'freelancer', 'category').all()
+
+        # Hide jobs from deleted clients for everyone except staff
+        if not (user.is_authenticated and user.is_staff):
+            queryset = queryset.filter(client__is_deleted=False)
 
         # Filtering by params
         status_param = self.request.query_params.get('status')

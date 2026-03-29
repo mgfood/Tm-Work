@@ -12,6 +12,17 @@ const adminService = {
         return response.data;
     },
 
+    // System Settings
+    getSystemSettings: async () => {
+        const response = await apiClient.get('/administration/settings/');
+        return response.data;
+    },
+
+    updateSystemSettings: async (data) => {
+        const response = await apiClient.put('/administration/settings/', data);
+        return response.data;
+    },
+
     // User Management
     getUsers: async (params = {}) => {
         const response = await apiClient.get('/users/', { params });
@@ -58,8 +69,18 @@ const adminService = {
         return response.data;
     },
 
+    restoreUser: async (userId) => {
+        const response = await apiClient.post(`/users/${userId}/restore/`);
+        return response.data;
+    },
+
     resetPassword: async (userId, password) => {
         const response = await apiClient.post(`/users/${userId}/set-password/`, { password });
+        return response.data;
+    },
+
+    impersonateUser: async (userId) => {
+        const response = await apiClient.post(`/users/${userId}/impersonate/`);
         return response.data;
     },
 

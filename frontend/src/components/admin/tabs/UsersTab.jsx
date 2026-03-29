@@ -32,11 +32,14 @@ const UsersTab = () => {
     const [resetPasswordData, setResetPasswordData] = useState('');
     const [tempBlockData, setTempBlockData] = useState({ hours: '24', reason: '' });
     const [isUserEditModalOpen, setIsUserEditModalOpen] = useState(false);
+    
+    // Status filter: 'active' or 'deleted'
+    const [statusFilter, setStatusFilter] = useState('active');
 
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const data = await adminService.getUsers();
+            const data = await adminService.getUsers({ status: statusFilter });
             const usersArray = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []);
             setUsers(usersArray);
         } catch (err) {
@@ -48,7 +51,7 @@ const UsersTab = () => {
 
     useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [statusFilter]);
 
     const menuRef = useRef(null);
 
@@ -96,12 +99,20 @@ const UsersTab = () => {
                     setUsers(prev => prev.filter(u => u.id !== userId));
                     setIsUserModalOpen(false);
                 }
+            } else if (actionType === 'restore') {
+                const isConfirmed = await confirm({
+                    title: t('common.confirm_action'),
+                    message: 'Вы уверены, что хотите восстановить удаленный аккаунт пользователя?',
+                    variant: 'info'
+                });
+                if (isConfirmed) {
+                    await adminService.restoreUser(userId);
+                    setUsers(prev => prev.filter(u => u.id !== userId));
+                    setIsUserModalOpen(false);
+                }
             }
             // Fetch updated data in background to ensure sync
-            adminService.getUsers().then(data => {
-                const usersArray = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []);
-                setUsers(usersArray);
-            });
+            fetchUsers();
             
             setOpenMenu(null);
             if (selectedUser?.id === userId && actionType !== 'delete') {
@@ -109,6 +120,36 @@ const UsersTab = () => {
             }
         } catch (err) {
             showToast(err.response?.data?.error || t('admin.actions.error_action'), 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleImpersonate = async (userId, userFirst, userLast) => {
+        try {
+            const isConfirmed = await confirm({
+                title: 'Режим Наблюдения',
+                message: `Вы собираетесь войти в аккаунт пользователя. Ваша сессия администратора будет сохранена, и вы сможете вернуться в любой момент. Продолжить?`,
+                variant: 'info'
+            });
+            if (!isConfirmed) return;
+
+            setActionLoading(true);
+            const data = await adminService.impersonateUser(userId);
+            
+            // Store original admin session
+            localStorage.setItem('original_admin_token', localStorage.getItem('access_token'));
+            localStorage.setItem('original_admin_refresh', localStorage.getItem('refresh_token'));
+            localStorage.setItem('impersonated_user_name', `${userFirst} ${userLast}`);
+
+            // Apply new user session
+            localStorage.setItem('access_token', data.access);
+            localStorage.setItem('refresh_token', data.refresh);
+            
+            // Force reload to apply auth context
+            window.location.href = '/';
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Ошибка при входе в аккаунт', 'error');
         } finally {
             setActionLoading(false);
         }
@@ -163,10 +204,7 @@ const UsersTab = () => {
             setTempBlockData({ hours: '24', reason: '' });
             
             // Background sync
-            adminService.getUsers().then(data => {
-                const usersArray = Array.isArray(data.results) ? data.results : (Array.isArray(data) ? data : []);
-                setUsers(usersArray);
-            });
+            fetchUsers();
 
             await handleShowUserDetails(selectedUser.id);
         } catch (err) {
@@ -201,10 +239,32 @@ const UsersTab = () => {
 
     return (
         <div data-testid="users-tab" className="space-y-6">
+            
+            {/* Status Filter Tabs */}
+            <div className="flex items-center gap-2 p-1 bg-slate-200 rounded-xl w-max">
+                <button
+                    onClick={() => setStatusFilter('active')}
+                    className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${statusFilter === 'active' ? 'bg-white text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    Активные
+                </button>
+                <button
+                    onClick={() => setStatusFilter('deleted')}
+                    className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${statusFilter === 'deleted' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    Ожидают очистки
+                </button>
+                <button
+                    onClick={() => setStatusFilter('anonymized')}
+                    className={`px-6 py-2 rounded-lg font-bold text-sm transition-all ${statusFilter === 'anonymized' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    Анонимизированные
+                </button>
+            </div>
+
             <div className="premium-card overflow-visible animate-in slide-in-from-bottom-4 duration-500 min-h-[400px]">
                 <div className="overflow-visible w-full pb-32">
-                    <table data-testid="users-table" className="w-full text-left border-collapse">
-                        <thead className="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    <table data-testid="users-table" className="w-full text-left border-collapse">                        <thead className="bg-slate-50 border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-widest">
                             <tr>
                                 <th className="px-6 py-4">{t('admin.user_table.user')}</th>
                                 <th className="px-6 py-4">{t('admin.user_table.reg_date')}</th>
@@ -240,6 +300,20 @@ const UsersTab = () => {
                                     <td className="px-6 py-4 text-sm font-medium text-slate-500">{formatDate(u.date_joined)}</td>
                                     <td className="px-6 py-4">
                                         {(() => {
+                                            if (u.is_anonymized) {
+                                                return (
+                                                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500">
+                                                        СТЕРТ
+                                                    </span>
+                                                );
+                                            }
+                                            if (u.is_deleted) {
+                                                return (
+                                                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700">
+                                                        В КОРЗИНЕ
+                                                    </span>
+                                                );
+                                            }
                                             const isBanned = !u.is_active || (u.blocked_until && new Date(u.blocked_until) > new Date());
                                             return (
                                                 <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${!isBanned ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -259,6 +333,39 @@ const UsersTab = () => {
                                             <MoreVertical size={16} />
                                         </button>
                                         {openMenu === u.id && (() => {
+                                            if (u.is_anonymized) return null; // No actions for fully scrubbed users
+                                            
+                                            if (u.is_deleted) {
+                                                return (
+                                                    <div 
+                                                        ref={menuRef}
+                                                        className="absolute right-6 top-10 w-48 bg-white border rounded-2xl shadow-2xl z-50 p-2 text-left animate-in fade-in zoom-in-95"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleUserAction(u.id, 'restore'); }}
+                                                            className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-green-600 hover:bg-green-50 flex items-center gap-2"
+                                                        >
+                                                            <CheckCircle size={14} /> Восстановить профиль
+                                                        </button>
+                                                        <hr className="my-2 border-slate-100" />
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleImpersonate(u.id, u.first_name, u.last_name); }}
+                                                            className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                                                        >
+                                                            <Users size={14} /> 🕵️‍♂️ Войти под юзером
+                                                        </button>
+                                                        <hr className="my-2 border-slate-100" />
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleUserAction(u.id, 'delete'); }}
+                                                            className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                        >
+                                                            <Trash size={14} /> Удалить навсегда
+                                                        </button>
+                                                    </div>
+                                                );
+                                            }
+
                                             const isBanned = !u.is_active || (u.blocked_until && new Date(u.blocked_until) > new Date());
                                             return (
                                                 <div 
@@ -292,6 +399,13 @@ const UsersTab = () => {
                                                         className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-amber-600 hover:bg-amber-50"
                                                     >
                                                         {u.is_vip ? t('admin.user_table.remove_vip') : t('admin.user_table.give_vip')}
+                                                    </button>
+                                                    <hr className="my-2 border-slate-100" />
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleImpersonate(u.id, u.first_name, u.last_name); }}
+                                                        className="w-full text-left px-3 py-2 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                                                    >
+                                                        <Users size={14} /> 🕵️‍♂️ Войти под юзером
                                                     </button>
                                                     <hr className="my-2 border-slate-100" />
                                                     <button
@@ -394,30 +508,58 @@ const UsersTab = () => {
                                 {/* Actions Column */}
                                 <div className="space-y-6">
                                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">{t('admin.user_details.admin_actions')}</h3>
-                                    {(() => {
-                                        const isBanned = !selectedUser.is_active || (selectedUser.blocked_until && new Date(selectedUser.blocked_until) > new Date());
-                                        return (
-                                            <button onClick={() => handleUserAction(selectedUser.id, !isBanned ? 'block' : 'unblock')} className={`w-full p-5 rounded-2xl flex items-center justify-between font-black transition-all ${!isBanned ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
-                                                <span className="flex items-center gap-3">
-                                                    {!isBanned ? <Shield size={20} /> : <Unlock size={20} />}
-                                                    {!isBanned ? t('admin.user_details.block_account') : t('admin.user_table.unblock')}
-                                                </span>
+                                    
+                                    {selectedUser.is_anonymized ? (
+                                        <div className="p-5 bg-slate-50 text-slate-500 rounded-2xl font-bold flex items-center gap-3">
+                                            <AlertTriangle size={20} /> Профиль безвозвратно стерт по политике анонимизации. Доступны только финансовые записи.
+                                        </div>
+                                    ) : selectedUser.is_deleted ? (
+                                        <>
+                                            <button onClick={() => handleUserAction(selectedUser.id, 'restore')} className="w-full p-5 bg-green-50 text-green-600 rounded-2xl flex items-center justify-between font-black hover:bg-green-100 transition-all">
+                                                <span className="flex items-center gap-3"><CheckCircle size={20} /> Восстановить профиль</span>
                                                 <ChevronRight size={18} />
                                             </button>
-                                        );
-                                    })()}
-                                    <button onClick={() => setIsTempBlockModalOpen(true)} className="w-full p-5 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-between font-black hover:bg-orange-100 transition-all">
-                                        <span className="flex items-center gap-3"><History size={20} /> {t('admin.user_details.temp_block')}</span>
-                                        <ChevronRight size={18} />
-                                    </button>
-                                    <button onClick={() => handleUserAction(selectedUser.id, 'toggle_verify')} className="w-full p-5 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-between font-black hover:bg-blue-100 transition-all">
-                                        <span className="flex items-center gap-3"><CheckCircle2 size={20} /> {selectedUser.is_verified ? t('admin.user_details.remove_verify') : t('admin.user_details.verify_account')}</span>
-                                        <ChevronRight size={18} />
-                                    </button>
-                                    <button onClick={() => handleUserAction(selectedUser.id, 'delete')} className="w-full p-5 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-between font-black hover:bg-red-50 hover:text-red-500 transition-all">
-                                        <span className="flex items-center gap-3"><Trash size={20} /> {t('admin.user_details.delete_permanently')}</span>
-                                        <ChevronRight size={18} />
-                                    </button>
+                                            <button onClick={() => handleImpersonate(selectedUser.id, selectedUser.first_name, selectedUser.last_name)} className="w-full p-5 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-between font-black hover:bg-blue-100 transition-all">
+                                                <span className="flex items-center gap-3"><Users size={20} /> 🕵️‍♂️ Войти под юзером</span>
+                                                <ChevronRight size={18} />
+                                            </button>
+                                            <button onClick={() => handleUserAction(selectedUser.id, 'delete')} className="w-full p-5 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-between font-black hover:bg-red-50 hover:text-red-500 transition-all">
+                                                <span className="flex items-center gap-3"><Trash size={20} /> Удалить навсегда (Очистить)</span>
+                                                <ChevronRight size={18} />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {(() => {
+                                                const isBanned = !selectedUser.is_active || (selectedUser.blocked_until && new Date(selectedUser.blocked_until) > new Date());
+                                                return (
+                                                    <button onClick={() => handleUserAction(selectedUser.id, !isBanned ? 'block' : 'unblock')} className={`w-full p-5 rounded-2xl flex items-center justify-between font-black transition-all ${!isBanned ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+                                                        <span className="flex items-center gap-3">
+                                                            {!isBanned ? <Shield size={20} /> : <Unlock size={20} />}
+                                                            {!isBanned ? t('admin.user_details.block_account') : t('admin.user_table.unblock')}
+                                                        </span>
+                                                        <ChevronRight size={18} />
+                                                    </button>
+                                                );
+                                            })()}
+                                            <button onClick={() => setIsTempBlockModalOpen(true)} className="w-full p-5 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-between font-black hover:bg-orange-100 transition-all">
+                                                <span className="flex items-center gap-3"><History size={20} /> {t('admin.user_details.temp_block')}</span>
+                                                <ChevronRight size={18} />
+                                            </button>
+                                            <button onClick={() => handleUserAction(selectedUser.id, 'toggle_verify')} className="w-full p-5 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-between font-black hover:bg-blue-100 transition-all">
+                                                <span className="flex items-center gap-3"><CheckCircle2 size={20} /> {selectedUser.is_verified ? t('admin.user_details.remove_verify') : t('admin.user_details.verify_account')}</span>
+                                                <ChevronRight size={18} />
+                                            </button>
+                                            <button onClick={() => handleImpersonate(selectedUser.id, selectedUser.first_name, selectedUser.last_name)} className="w-full p-5 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-between font-black hover:bg-blue-100 transition-all mt-4">
+                                                <span className="flex items-center gap-3"><Users size={20} /> 🕵️‍♂️ Войти под юзером (God Mode)</span>
+                                                <ChevronRight size={18} />
+                                            </button>
+                                            <button onClick={() => handleUserAction(selectedUser.id, 'delete')} className="w-full p-5 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-between font-black hover:bg-red-50 hover:text-red-500 transition-all mt-4">
+                                                <span className="flex items-center gap-3"><Trash size={20} /> Удалить профиль (Скрыть)</span>
+                                                <ChevronRight size={18} />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>

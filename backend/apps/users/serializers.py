@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
     balance = serializers.DecimalField(source='profile.balance', max_digits=12, decimal_places=2, read_only=True)
     vip_until = serializers.SerializerMethodField()
     active_plan_id = serializers.SerializerMethodField()
+
     
     def get_vip_until(self, obj):
         if not hasattr(obj, 'profile'):
@@ -31,6 +32,18 @@ class UserSerializer(serializers.ModelSerializer):
             return None
         sub = obj.profile.currently_active_subscription
         return sub.plan.id if sub else None
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        request = self.context.get('request')
+        is_admin = request and request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
+        
+        if getattr(instance, 'is_deleted', False) and not is_admin:
+            ret['first_name'] = "Удаленный"
+            ret['last_name'] = "Аккаунт"
+            ret['email'] = "deleted@account.com"
+            
+        return ret
     
     class Meta:
         model = User
@@ -47,12 +60,14 @@ class UserSerializer(serializers.ModelSerializer):
             'balance',
             'blocked_users',
             'is_active',
+            'is_deleted',
+            'is_anonymized',
             'is_staff',
             'is_superuser',
             'date_joined',
             'blocked_until'
         ]
-        read_only_fields = ['id', 'date_joined', 'is_active', 'is_staff', 'is_superuser', 'blocked_until']
+        read_only_fields = ['id', 'date_joined', 'is_active', 'is_staff', 'is_superuser', 'blocked_until', 'is_deleted', 'is_anonymized']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -80,10 +95,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         ]
     
     def validate_email(self, value):
-        """Check if email already exists"""
+        """Check if email already exists and doesn't use reserved prefixes"""
+        value = value.lower()
+        if value.startswith('deleted_'):
+            raise serializers.ValidationError("Использование зарезервированного системного префикса запрещено.")
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("User with this email already exists.")
-        return value.lower()
+        return value
     
     def validate(self, attrs):
         """Validate that passwords match"""

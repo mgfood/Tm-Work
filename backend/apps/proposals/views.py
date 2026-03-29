@@ -56,7 +56,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
 
         from django.db.models import Q
         queryset = Proposal.objects.filter(
-            Q(freelancer=user) | Q(job__client=user)
+            Q(freelancer=user) | (Q(job__client=user) & Q(freelancer__is_deleted=False))
         ).distinct()
 
         # Filter by job

@@ -46,6 +46,8 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsPage from './pages/TermsPage';
 import LogoutPage from './pages/LogoutPage';
 
+import GlobalImpersonationBanner from './components/GlobalImpersonationBanner';
+
 function AppContent() {
     const location = useLocation();
     const isChatRoot = location.pathname === '/chat';
@@ -54,6 +56,7 @@ function AppContent() {
 
     return (
         <div className={`bg-slate-50 flex flex-col ${isChatPage ? 'h-[100dvh] overflow-hidden' : 'min-h-screen'}`}>
+            <GlobalImpersonationBanner />
             <Navbar />
 
             <main className="flex-grow flex flex-col min-h-0 relative">

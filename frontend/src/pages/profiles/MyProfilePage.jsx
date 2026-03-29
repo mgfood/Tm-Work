@@ -23,7 +23,8 @@ const MyProfilePage = () => {
         isPortfolioModalOpen, setIsPortfolioModalOpen, editingPortfolioId, setEditingPortfolioId,
         handleAvatarChange, handleDeleteAvatar, handleProfileUpdate, handleRoleSwitch,
         handlePortfolioSubmit, handleDeletePortfolioItem, handlePublishDraft, handleDeleteJob,
-        handleProposalAction, handleAcceptProposal, currentRole, switchRole, t, i18n
+        handleProposalAction, handleAcceptProposal, handleDeleteAccount, allCategories,
+        currentRole, switchRole, t, i18n
     } = useProfileData();
 
     const [isEditing, setIsEditing] = useState(false);
@@ -73,6 +74,8 @@ const MyProfilePage = () => {
                             formData={formData}
                             setFormData={setFormData}
                             allSkills={allSkills}
+                            allCategories={allCategories}
+                            handleDeleteAccount={handleDeleteAccount}
                             handleProfileUpdate={async (e) => {
                                 const success = await handleProfileUpdate(e);
                                 if (success) setIsEditing(false);
