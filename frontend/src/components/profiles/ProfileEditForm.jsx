@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Save, Loader2, Send, Instagram, Github, Linkedin, Trash2, User } from 'lucide-react';
+import { Settings, Save, Loader2, Send, Github, Trash2, User, MessageCircle, Link2, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const ProfileEditForm = ({
@@ -199,10 +199,10 @@ const ProfileEditForm = ({
                                     })}
                                 />
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors">
-                                    {platform === 'telegram' && <Send size={20} />}
-                                    {platform === 'instagram' && <Instagram size={20} />}
+                                    {platform === 'imo' && <MessageCircle size={20} />}
+                                    {platform === 'start' && <Globe size={20} />}
                                     {platform === 'github' && <Github size={20} />}
-                                    {platform === 'linkedin' && <Linkedin size={20} />}
+                                    {platform === 'link' && <Link2 size={20} />}
                                 </div>
                             </div>
                         ))}

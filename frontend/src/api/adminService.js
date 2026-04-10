@@ -215,6 +215,39 @@ const adminService = {
     getRevenueStats: async () => {
         const response = await apiClient.get('/administration/revenue/');
         return response.data;
+    },
+
+    // Balance Adjustment Requests
+    getBalanceRequests: async (params = {}) => {
+        const response = await apiClient.get('/administration/balance-requests/', { params });
+        return response.data;
+    },
+
+    createBalanceRequest: async (data) => {
+        const response = await apiClient.post('/administration/balance-requests/', data);
+        return response.data;
+    },
+
+    reviewBalanceRequest: async (requestId, action, comment = '') => {
+        const response = await apiClient.post(`/administration/balance-requests/${requestId}/review/`, {
+            action,
+            comment
+        });
+        return response.data;
+    },
+
+    // Withdrawal Requests
+    getWithdrawals: async (params = {}) => {
+        const response = await apiClient.get('/administration/withdrawals/', { params });
+        return response.data;
+    },
+
+    reviewWithdrawal: async (id, action, comment = '') => {
+        const response = await apiClient.post(`/administration/withdrawals/${id}/review/`, {
+            action,
+            comment
+        });
+        return response.data;
     }
 };
 

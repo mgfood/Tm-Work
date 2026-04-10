@@ -53,6 +53,10 @@ class SystemSetting(models.Model):
         default=30, 
         help_text="Number of days to keep a soft-deleted account before anonymizing."
     )
+    auto_approve_withdrawals = models.BooleanField(
+        default=False,
+        help_text="If enabled, withdrawal requests are automatically approved and funds act as immediately withdrawn."
+    )
 
     # Granular Privacy Deletion Settings
     delete_name = models.BooleanField(default=True, help_text="Erase first and last name")
@@ -76,3 +80,89 @@ class SystemSetting(models.Model):
 
     def __str__(self):
         return "Global System Settings"
+
+
+class BalanceAdjustmentRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', _('Pending')
+        APPROVED = 'APPROVED', _('Approved')
+        REJECTED = 'REJECTED', _('Rejected')
+
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='requested_balance_adjustments',
+        verbose_name=_('Requester')
+    )
+    target_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='balance_adjustment_targets',
+        verbose_name=_('Target User')
+    )
+    amount = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2,
+        verbose_name=_('Amount'),
+        help_text=_('Positive to add, negative to subtract')
+    )
+    reason = models.TextField(verbose_name=_('Reason'))
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        verbose_name=_('Status')
+    )
+    approver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_balance_adjustments',
+        verbose_name=_('Approver')
+    )
+    admin_comment = models.TextField(
+        blank=True, 
+        verbose_name=_('Admin Comment'),
+        help_text=_('Reason for approval or rejection')
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'balance_adjustment_requests'
+        verbose_name = _('Balance Adjustment Request')
+        verbose_name_plural = _('Balance Adjustment Requests')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Request by {self.requester.email} for {self.target_user.email} ({self.amount})"
+
+
+class ContactMessage(models.Model):
+    class Status(models.TextChoices):
+        NEW = 'NEW', _('New')
+        READ = 'READ', _('Read')
+        ARCHIVED = 'ARCHIVED', _('Archived')
+
+    name = models.CharField(max_length=255, verbose_name=_('Name'))
+    email = models.EmailField(verbose_name=_('Email'))
+    subject = models.CharField(max_length=255, verbose_name=_('Subject'))
+    message = models.TextField(verbose_name=_('Message'))
+    status = models.CharField(
+        max_length=20, 
+        choices=Status.choices, 
+        default=Status.NEW,
+        verbose_name=_('Status')
+    )
+    admin_comment = models.TextField(blank=True, verbose_name=_('Admin Comment'))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'contact_messages'
+        verbose_name = _('Contact Message')
+        verbose_name_plural = _('Contact Messages')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Message from {self.name} ({self.email}) - {self.subject}"

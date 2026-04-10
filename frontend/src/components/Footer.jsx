@@ -39,10 +39,10 @@ const Footer = () => {
                 </div>
                 <div className="border-t border-slate-800 pt-8 flex flex-col md:row justify-between items-center gap-4">
                     <p>{t('footer.rights')}</p>
-                    <div className="flex gap-6">
-                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Instagram</a>
-                        <a href="https://t.me" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Telegram</a>
-                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">LinkedIn</a>
+                    <div className="flex gap-3">
+                        <a href="tel:+99361426142" className="px-4 py-1.5 rounded-lg text-sm font-bold transition-all hover:opacity-80" style={{ backgroundColor: '#1A5BAC', color: 'white' }}>Imo</a>
+                        <a href="tel:+99361426142" className="px-4 py-1.5 rounded-lg text-sm font-bold transition-all hover:opacity-80" style={{ backgroundColor: '#003B8E', color: 'white' }}>Link</a>
+                        <a href="tel:+99361426142" className="px-4 py-1.5 rounded-lg text-sm font-bold transition-all hover:opacity-80" style={{ backgroundColor: '#00C898', color: 'white' }}>Start</a>
                     </div>
                 </div>
             </div>

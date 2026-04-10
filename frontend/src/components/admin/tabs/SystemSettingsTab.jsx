@@ -146,6 +146,33 @@ const SystemSettingsTab = () => {
                                     От 14 до 30 дней, чтобы у пользователя была возможность обратиться в поддержку.
                                 </p>
                             </div>
+
+                            <div className="pt-6 border-t border-slate-100">
+                                <h3 className="text-lg font-black text-slate-800 tracking-tight mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-primary-300"></span>
+                                    Вывод средств
+                                </h3>
+                                <label className="flex items-start gap-4 cursor-pointer p-6 border-2 border-slate-100 rounded-2xl hover:border-slate-200 hover:bg-primary-50 transition-all group">
+                                    <div className="relative flex items-center mt-1 shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={settings.auto_approve_withdrawals}
+                                            onChange={(e) => setSettings({ ...settings, auto_approve_withdrawals: e.target.checked })}
+                                        />
+                                        <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-[24px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600 shadow-inner"></div>
+                                    </div>
+                                    <div>
+                                        <span className="font-bold text-slate-900 text-lg group-hover:text-primary-700 transition-colors">Автоматическое одобрение вывода</span>
+                                        <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                                            Если включено, запросы на вывод средств будут сразу помечаться как «Выполнены», а деньги списываться с баланса пользователя мгновенно.
+                                        </p>
+                                        <div className="mt-4 p-4 bg-blue-50 text-blue-700 text-xs rounded-xl font-medium border border-blue-100">
+                                            <strong>Рекомендация:</strong> Отключайте эту функцию, если хотите проверять реквизиты пользователей вручную перед выплатой.
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 

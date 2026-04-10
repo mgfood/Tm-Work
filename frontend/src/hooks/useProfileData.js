@@ -42,10 +42,10 @@ export const useProfileData = () => {
         category_id: '',
         skills_ids: [],
         social_links: {
-            telegram: '',
-            instagram: '',
+            imo: '',
+            start: '',
             github: '',
-            linkedin: ''
+            link: ''
         }
     });
 
@@ -86,7 +86,7 @@ export const useProfileData = () => {
                 experience_years: profileData.experience_years || '',
                 category_id: profileData.category?.id || '',
                 skills_ids: profileData.skills?.map(s => s.id) || [],
-                social_links: profileData.social_links || { telegram: '', instagram: '', github: '', linkedin: '' }
+                social_links: profileData.social_links || { imo: '', start: '', github: '', link: '' }
             });
             setAllSkills(skillsData.results || skillsData);
             setAllCategories(categoriesData.results || categoriesData);

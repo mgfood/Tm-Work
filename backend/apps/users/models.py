@@ -99,6 +99,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     
+    admin_role = models.ForeignKey(
+        'AdminRole',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='staff_users'
+    )
+    
     date_joined = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(null=True, blank=True)
     

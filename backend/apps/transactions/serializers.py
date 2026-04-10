@@ -16,3 +16,21 @@ class WalletSummarySerializer(serializers.Serializer):
 
 class DepositTestSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))
+
+
+from .models import WithdrawalRequest
+
+class WithdrawalRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WithdrawalRequest
+        fields = [
+            'id', 'amount', 'bank_details', 'status', 
+            'admin_comment', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'status', 'admin_comment', 'created_at', 'updated_at']
+
+    def validate_amount(self, value):
+        from decimal import Decimal
+        if value < Decimal('50.00'):
+            raise serializers.ValidationError("Минимальная сумма для вывода — 50 TMT.")
+        return value

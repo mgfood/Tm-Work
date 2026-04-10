@@ -8,9 +8,13 @@ import {
 } from 'recharts';
 import adminService from '../../../api/adminService';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../../context/AuthContext';
 
 const OverviewTab = () => {
     const { t } = useTranslation();
+    const { user } = useAuth();
+    const isSuper = user?.is_superuser;
+    const role = user?.admin_role || {};
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -49,11 +53,11 @@ const OverviewTab = () => {
             {/* Summary Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: t('admin.stats.total_users'), value: stats?.summary?.total_users, color: 'text-blue-600', bg: 'bg-blue-50', icon: Users },
-                    { label: t('admin.stats.active_jobs'), value: stats?.summary?.active_jobs, color: 'text-green-600', bg: 'bg-green-50', icon: Briefcase },
-                    { label: t('admin.stats.in_escrow'), value: stats?.summary?.total_escrow, color: 'text-primary-600', bg: 'bg-primary-50', icon: DollarSign },
-                    { label: t('admin.stats.completion_rate'), value: `${stats?.completion_rate}%`, color: 'text-indigo-600', bg: 'bg-indigo-50', icon: TrendingUp },
-                ].map((item, idx) => (
+                    (isSuper || role.can_manage_users) && { label: t('admin.stats.total_users'), value: stats?.summary?.total_users, color: 'text-blue-600', bg: 'bg-blue-50', icon: Users },
+                    (isSuper || role.can_manage_jobs) && { label: t('admin.stats.active_jobs'), value: stats?.summary?.active_jobs, color: 'text-green-600', bg: 'bg-green-50', icon: Briefcase },
+                    (isSuper || role.can_manage_finance) && { label: t('admin.stats.in_escrow'), value: stats?.summary?.total_escrow, color: 'text-primary-600', bg: 'bg-primary-50', icon: DollarSign },
+                    (isSuper || role.can_manage_jobs) && { label: t('admin.stats.completion_rate'), value: `${stats?.completion_rate}%`, color: 'text-indigo-600', bg: 'bg-indigo-50', icon: TrendingUp },
+                ].filter(Boolean).map((item, idx) => (
                     <div key={idx} className="premium-card p-6 flex flex-col gap-4">
                         <div className="flex items-center justify-between">
                             <div className={`w-12 h-12 ${item.bg} ${item.color} rounded-xl flex items-center justify-center`}>
@@ -67,8 +71,9 @@ const OverviewTab = () => {
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="premium-card p-8">
+            <div className={`grid grid-cols-1 ${(!isSuper && !role.can_manage_users) || (!isSuper && !role.can_manage_finance) ? '' : 'lg:grid-cols-2'} gap-8`}>
+                {(isSuper || role.can_manage_users) && (
+                    <div className="premium-card p-8">
                     <h3 className="text-lg font-bold text-slate-900 mb-8">{t('admin.stats.registrations_title')}</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={100}>
@@ -91,9 +96,11 @@ const OverviewTab = () => {
                         </ResponsiveContainer>
                     </div>
                 </div>
+                )}
 
-                <div className="premium-card p-8">
-                    <h3 className="text-lg font-bold text-slate-900 mb-8">{t('admin.stats.volume_title')}</h3>
+                {(isSuper || role.can_manage_finance) && (
+                    <div className="premium-card p-8">
+                        <h3 className="text-lg font-bold text-slate-900 mb-8">{t('admin.stats.volume_title')}</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={100}>
                             <AreaChart data={stats?.trends?.volume || []}>
@@ -115,6 +122,7 @@ const OverviewTab = () => {
                         </ResponsiveContainer>
                     </div>
                 </div>
+                )}
             </div>
         </div>
     );

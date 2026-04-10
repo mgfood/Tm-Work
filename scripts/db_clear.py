@@ -63,19 +63,33 @@ def clear_postgres(vars):
         print(f"[!] Ошибка PostgreSQL: {e}")
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Скрипт очистки Базы Данных TmWork")
+    parser.add_argument('--sqlite', action='store_true', help='Принудительная очистка SQLite')
+    parser.add_argument('--postgres', action='store_true', help='Принудительная очистка PostgreSQL')
+    args = parser.parse_args()
+
     print("="*50)
     print("Скрипт очистки Базы Данных TmWork")
     print("="*50)
     
     env = load_env()
-    engine = env.get('DB_ENGINE', 'sqlite3')
+    
+    # Если аргументы переданы, используем их, иначе берем из .env
+    if args.sqlite:
+        engine = 'sqlite3'
+    elif args.postgres:
+        engine = 'postgresql'
+    else:
+        engine = env.get('DB_ENGINE', 'sqlite3')
+        
     db_name = env.get('DB_NAME', 'tmwork_dev')
 
     if 'sqlite' in engine.lower():
-        print(f"[*] Обнаружена SQLite: {db_name}")
+        print(f"[*] Режим SQLite: {db_name}")
         clear_sqlite(db_name)
     elif 'postgres' in engine.lower():
-        print(f"[*] Обнаружена PostgreSQL: {db_name}")
+        print(f"[*] Режим PostgreSQL: {db_name}")
         clear_postgres(env)
     else:
         print(f"[!] Неизвестный движок БД: {engine}")

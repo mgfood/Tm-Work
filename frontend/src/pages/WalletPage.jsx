@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next'; // Добавили импорт
+import { useTranslation } from 'react-i18next';
 import { useWallet } from '../hooks/useWallet';
 import DepositModal from '../components/wallet/DepositModal';
+import WithdrawModal from '../components/wallet/WithdrawModal';
 import { Wallet, ArrowUpRight, ArrowDownLeft, History, Loader2, RefreshCw } from 'lucide-react';
 
 const WalletPage = () => {
     const { t } = useTranslation(); // Инициализация перевода
     const { balance, history, loading, error, refresh, deposit } = useWallet();
     const [isDepositOpen, setIsDepositOpen] = useState(false);
+    const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
 
     if (loading && !history.length) {
         return (
@@ -41,7 +43,10 @@ const WalletPage = () => {
                                 >
                                     {t('billing.deposit')}
                                 </button>
-                                <button className="w-full py-3 bg-blue-500/30 text-white font-medium rounded-xl hover:bg-blue-500/40 transition-colors">
+                                <button 
+                                    onClick={() => setIsWithdrawOpen(true)}
+                                    className="w-full py-3 bg-white/20 text-white font-bold rounded-xl hover:bg-white/30 transition-all border border-white/30 backdrop-blur-sm"
+                                >
                                     {t('billing.withdraw')}
                                 </button>
                             </div>
@@ -122,6 +127,13 @@ const WalletPage = () => {
                 isOpen={isDepositOpen}
                 onClose={() => setIsDepositOpen(false)}
                 onDeposit={deposit}
+            />
+
+            <WithdrawModal 
+                isOpen={isWithdrawOpen}
+                onClose={() => setIsWithdrawOpen(false)}
+                currentBalance={balance}
+                onSuccess={refresh}
             />
         </div>
     );

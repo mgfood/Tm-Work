@@ -85,6 +85,12 @@ const LoginPage = () => {
                             </div>
                         </div>
 
+                        <div className="text-xs text-slate-500 text-center">
+                            Входя на сайт, вы соглашаетесь с{' '}
+                            <Link to="/terms" className="text-primary-600 font-semibold hover:underline" target="_blank">Правилами</Link>{' '}и{' '}
+                            <Link to="/privacy" className="text-primary-600 font-semibold hover:underline" target="_blank">Политикой</Link>.
+                        </div>
+
                         <button
                             type="submit"
                             disabled={isSubmitting}

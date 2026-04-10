@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Users, Briefcase, ShieldAlert, BarChart3,
     List, CreditCard, Award, Megaphone,
-    History, Gavel, UserCog, DollarSign, Settings
+    History, Gavel, UserCog, DollarSign, Settings, Banknote
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
@@ -21,7 +21,9 @@ import BroadcastTab from '../../components/admin/tabs/BroadcastTab';
 import VIPSettingsTab from '../../components/admin/tabs/VIPSettingsTab';
 import StaffManagementTab from './StaffManagementTab';
 import RevenueTab from './RevenueTab';
+import BalanceRequestsTab from './BalanceRequestsTab';
 import SystemSettingsTab from '../../components/admin/tabs/SystemSettingsTab';
+import WithdrawalsTab from '../../components/admin/tabs/WithdrawalsTab';
 
 const AdminDashboard = () => {
     const { user, loading: authLoading } = useAuth();
@@ -33,16 +35,44 @@ const AdminDashboard = () => {
     }
 
     const menuItems = [
-        { id: 'overview', label: t('admin.analytics'), icon: BarChart3 },
-        { id: 'users', label: t('admin.users'), icon: Users },
-        { id: 'jobs', label: t('admin.jobs'), icon: Briefcase },
-        { id: 'categories', label: t('admin.categories'), icon: List },
-        { id: 'skills', label: t('admin.skills'), icon: Award },
-        { id: 'transactions', label: t('admin.transactions'), icon: CreditCard },
-        { id: 'disputes', label: t('admin.disputes_mgmt'), icon: Gavel },
-        { id: 'logs', label: t('admin.audit_logs'), icon: History },
-        { id: 'broadcast', label: t('admin.broadcast_mgmt.title'), icon: Megaphone },
+        { id: 'overview', label: 'Рабочий стол', icon: BarChart3 }, // Доступно всем
+        { id: 'users', label: t('admin.users'), icon: Users, permission: 'can_manage_users' },
+        { id: 'jobs', label: t('admin.jobs'), icon: Briefcase, permission: 'can_manage_jobs' },
+        { id: 'categories', label: t('admin.categories'), icon: List, permission: 'can_manage_content' },
+        { id: 'skills', label: t('admin.skills'), icon: Award, permission: 'can_manage_content' },
+        { id: 'transactions', label: t('admin.transactions'), icon: CreditCard, permission: 'can_manage_finance' },
+        { id: 'withdrawals', label: 'Вывод средств', icon: Banknote, permission: 'can_manage_finance' },
+        { id: 'balance_requests', label: 'Запросы на баланс', icon: DollarSign, permission: 'can_manage_finance' },
+        { id: 'disputes', label: t('admin.disputes_mgmt'), icon: Gavel, permission: 'can_manage_jobs' },
+        { id: 'logs', label: t('admin.audit_logs'), icon: History, permission: 'can_manage_admins' },
+        { id: 'broadcast', label: t('admin.broadcast_mgmt.title'), icon: Megaphone, permission: 'can_manage_admins' },
     ];
+
+    const hasPermission = (item) => {
+        if (user?.is_superuser) return true;
+        if (!user?.admin_role) return false;
+        if (!item.permission) return true;
+        return user.admin_role[item.permission];
+    };
+
+    useEffect(() => {
+        if (!authLoading && user) {
+            // Защита супер-админских вкладок
+            const superAdminTabs = ['staff', 'revenue', 'vip_settings', 'settings'];
+            if (superAdminTabs.includes(activeTab) && !user.is_superuser) {
+                const firstPermitted = menuItems.find(hasPermission);
+                if (firstPermitted) setActiveTab(firstPermitted.id);
+                return;
+            }
+
+            // Защита обычных вкладок
+            const currentMenuItem = menuItems.find(item => item.id === activeTab);
+            if (currentMenuItem && !hasPermission(currentMenuItem)) {
+                const firstPermitted = menuItems.find(hasPermission);
+                if (firstPermitted) setActiveTab(firstPermitted.id);
+            }
+        }
+    }, [user, authLoading, activeTab]);
 
     return (
         <div data-testid="admin-dashboard" className="flex-grow flex flex-col md:flex-row min-h-[calc(100vh-80px)] bg-slate-50">
@@ -53,7 +83,7 @@ const AdminDashboard = () => {
                     TmWork Admin
                 </h2>
 
-                {menuItems.map((item) => (
+                {menuItems.filter(hasPermission).map((item) => (
                     <button
                         key={item.id}
                         data-testid={`admin-tab-${item.id}`}
@@ -135,25 +165,32 @@ const AdminDashboard = () => {
                         {activeTab === 'vip_settings' && t('admin.vip_settings')}
                         {activeTab === 'staff' && t('admin.staff_mgmt')}
                         {activeTab === 'revenue' && t('admin.revenue_mgmt')}
+                        {activeTab === 'balance_requests' && 'Запросы на изменение баланса'}
+                        {activeTab === 'withdrawals' && 'Модерация выплат'}
                         {activeTab === 'settings' && 'Настройки Системы'}
                     </h1>
                     <p className="text-slate-500">{t('admin.subtitle')}</p>
                 </header>
 
                 <div className="tab-content">
-                    {activeTab === 'overview' && <OverviewTab />}
-                    {activeTab === 'users' && <UsersTab />}
-                    {activeTab === 'jobs' && <JobsTab />}
-                    {activeTab === 'categories' && <CategoriesTab />}
-                    {activeTab === 'skills' && <SkillsTab />}
-                    {activeTab === 'transactions' && <TransactionsTab />}
-                    {activeTab === 'disputes' && <DisputesTab />}
-                    {activeTab === 'logs' && <AuditLogsTab />}
-                    {activeTab === 'broadcast' && <BroadcastTab />}
-                    {activeTab === 'vip_settings' && <VIPSettingsTab />}
-                    {activeTab === 'staff' && <StaffManagementTab />}
-                    {activeTab === 'revenue' && <RevenueTab />}
-                    {activeTab === 'settings' && <SystemSettingsTab />}
+                    {/* Safe Render Engine - only render if permitted */}
+                    {activeTab === 'overview' && hasPermission(menuItems.find(i => i.id === 'overview')) && <OverviewTab />}
+                    {activeTab === 'users' && hasPermission(menuItems.find(i => i.id === 'users')) && <UsersTab />}
+                    {activeTab === 'jobs' && hasPermission(menuItems.find(i => i.id === 'jobs')) && <JobsTab />}
+                    {activeTab === 'categories' && hasPermission(menuItems.find(i => i.id === 'categories')) && <CategoriesTab />}
+                    {activeTab === 'skills' && hasPermission(menuItems.find(i => i.id === 'skills')) && <SkillsTab />}
+                    {activeTab === 'transactions' && hasPermission(menuItems.find(i => i.id === 'transactions')) && <TransactionsTab />}
+                    {activeTab === 'disputes' && hasPermission(menuItems.find(i => i.id === 'disputes')) && <DisputesTab />}
+                    {activeTab === 'logs' && hasPermission(menuItems.find(i => i.id === 'logs')) && <AuditLogsTab />}
+                    {activeTab === 'broadcast' && hasPermission(menuItems.find(i => i.id === 'broadcast')) && <BroadcastTab />}
+                    
+                    {/* SuperAdmin Only Rendering */}
+                    {user?.is_superuser && activeTab === 'vip_settings' && <VIPSettingsTab />}
+                    {user?.is_superuser && activeTab === 'staff' && <StaffManagementTab />}
+                    {user?.is_superuser && activeTab === 'revenue' && <RevenueTab />}
+                    {user?.is_superuser && activeTab === 'settings' && <SystemSettingsTab />}
+                    { activeTab === 'balance_requests' && hasPermission(menuItems.find(i => i.id === 'balance_requests')) && <BalanceRequestsTab />}
+                    { activeTab === 'withdrawals' && hasPermission(menuItems.find(i => i.id === 'withdrawals')) && <WithdrawalsTab />}
                 </div>
             </main>
         </div >

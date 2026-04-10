@@ -3,8 +3,11 @@ import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useConfirm } from '../../context/ConfirmContext';
 import adminService from '../../api/adminService';
+import { useAuth } from '../../context/AuthContext';
 
 const JobEditModal = ({ isOpen, job, onClose, onSuccess }) => {
+    const { user } = useAuth();
+    const isSuperAdmin = user?.is_superuser;
     const { t } = useTranslation();
     const { confirm } = useConfirm();
     const [formData, setFormData] = useState({
@@ -130,8 +133,9 @@ const JobEditModal = ({ isOpen, job, onClose, onSuccess }) => {
                             type="text"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:bg-gray-50"
                             required
+                            disabled={!isSuperAdmin}
                         />
                     </div>
 
@@ -140,8 +144,9 @@ const JobEditModal = ({ isOpen, job, onClose, onSuccess }) => {
                         <textarea
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] disabled:opacity-60 disabled:bg-gray-50"
                             required
+                            disabled={!isSuperAdmin}
                         />
                     </div>
 
@@ -152,8 +157,9 @@ const JobEditModal = ({ isOpen, job, onClose, onSuccess }) => {
                                 type="number"
                                 value={formData.budget}
                                 onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                                className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:bg-gray-50"
                                 required
+                                disabled={!isSuperAdmin}
                             />
                         </div>
 
@@ -163,7 +169,8 @@ const JobEditModal = ({ isOpen, job, onClose, onSuccess }) => {
                                 type="date"
                                 value={formData.deadline}
                                 onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                                className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:bg-gray-50"
+                                disabled={!isSuperAdmin}
                             />
                         </div>
                     </div>
@@ -192,29 +199,33 @@ const JobEditModal = ({ isOpen, job, onClose, onSuccess }) => {
 
                     {/* Actions */}
                     <div className="flex gap-4 pt-4">
-                        <button
-                            type="button"
-                            onClick={handleDelete}
-                            className="px-6 py-3 rounded-2xl bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                            disabled={loading}
-                        >
-                            {t('admin.job_edit.btn_delete')}
-                        </button>
+                        {isSuperAdmin && (
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                className="px-6 py-3 rounded-2xl bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                disabled={loading}
+                            >
+                                {t('admin.job_edit.btn_delete')}
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-6 py-3 rounded-2xl border border-gray-300 hover:bg-gray-50 transition-colors"
+                            className={`px-6 py-3 rounded-2xl border border-gray-300 hover:bg-gray-50 transition-colors ${!isSuperAdmin ? 'flex-1' : 'flex-1'}`}
                             disabled={loading}
                         >
-                            {t('common.cancel')}
+                            {isSuperAdmin ? t('common.cancel') : 'Закрыть окно'}
                         </button>
-                        <button
-                            type="submit"
-                            className="flex-1 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg transition-all disabled:opacity-50"
-                            disabled={loading}
-                        >
-                            {loading ? t('common.saving') : t('common.save_changes')}
-                        </button>
+                        {isSuperAdmin && (
+                            <button
+                                type="submit"
+                                className="flex-1 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg transition-all disabled:opacity-50"
+                                disabled={loading}
+                            >
+                                {loading ? t('common.saving') : t('common.save_changes')}
+                            </button>
+                        )}
                     </div>
                 </form>
             </div>
