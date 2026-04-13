@@ -66,9 +66,24 @@ class Profile(models.Model):
     )
     
     # --- Private Section (Dashboard/Cabinet) ---
+    class Velayat(models.TextChoices):
+        ASHGABAT = 'ASHGABAT', 'Ashgabat'
+        AHAL = 'AHAL', 'Ahal'
+        BALKAN = 'BALKAN', 'Balkan'
+        DASHOGUZ = 'DASHOGUZ', 'Dashoguz'
+        LEBAP = 'LEBAP', 'Lebap'
+        MARY = 'MARY', 'Mary'
+
     phone_number = models.CharField(max_length=20, blank=True)
     birth_date = models.DateField(null=True, blank=True)
-    location = models.CharField(max_length=255, blank=True)
+    location_velayat = models.CharField(
+        max_length=20, 
+        choices=Velayat.choices, 
+        blank=True, 
+        null=True,
+        verbose_name="Region/Velayat"
+    )
+    location = models.CharField(max_length=255, blank=True, verbose_name="City/District/Address")
     is_verified = models.BooleanField(default=False)
     is_vip = models.BooleanField(default=False)
     

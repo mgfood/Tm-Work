@@ -7,8 +7,9 @@ from django.db.models import Count, Q
 from .models import Job, JobFile, Category
 from .serializers import JobSerializer, JobFileSerializer, CategorySerializer
 from .services import JobService
-from .search import smart_filter_jobs  # New import
+from .search import smart_filter_jobs
 from apps.users.permissions import IsClient, IsJobOwner
+from apps.core.services.ml_service import MLRecommendationService
 
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
@@ -69,27 +70,37 @@ class JobViewSet(viewsets.ModelViewSet):
                 pass
 
         search_query = request.query_params.get('search', '').strip()
+        user = request.user
+        is_freelancer = user.is_authenticated and user.has_role('FREELANCER')
 
         if search_query:
-            # Apply fuzzy search logic
+            # --- AI Circuit #2: Search ---
+            # 1. Filter by keywords
             jobs_list = smart_filter_jobs(queryset, search_query)
-            
-            # Manual pagination for the list result
-            page = self.paginate_queryset(jobs_list)
+            # 2. Re-rank results for freelancers to push better matches to the top
+            if is_freelancer:
+                jobs_list = MLRecommendationService.get_search_recommendations(user, jobs_list)
+        elif is_freelancer:
+            # --- AI Circuit #1: Feed ---
+            # Personalize the main feed for freelancers automatically
+            jobs_list = MLRecommendationService.get_feed_recommendations(user, queryset)
+        else:
+            # Standard newest-first behavior for everyone else
+            page = self.paginate_queryset(queryset)
             if page is not None:
                 serializer = self.get_serializer(page, many=True)
                 return self.get_paginated_response(serializer.data)
 
-            serializer = self.get_serializer(jobs_list, many=True)
+            serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
 
-        # Standard queryset behavior (with pagination)
-        page = self.paginate_queryset(queryset)
+        # Handle manual pagination for AI-processed results (lists)
+        page = self.paginate_queryset(jobs_list)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = self.get_serializer(jobs_list, many=True)
         return Response(serializer.data)
 
     def get_queryset(self):
