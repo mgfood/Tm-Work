@@ -12,7 +12,8 @@ class ProposalService:
         """
         Принятие отклика заказчиком.
         """
-        job = proposal.job
+        # Lock the job to prevent concurrent proposal acceptances
+        job = Job.objects.select_for_update().get(id=proposal.job_id)
 
         # 1. Проверка прав: только заказчик может принять отклик
         if user != job.client:

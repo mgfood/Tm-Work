@@ -55,7 +55,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             return Proposal.objects.none()
 
         from django.db.models import Q
-        queryset = Proposal.objects.filter(
+        queryset = Proposal.objects.select_related('freelancer', 'job', 'job__client').filter(
             Q(freelancer=user) | (Q(job__client=user) & Q(freelancer__is_deleted=False))
         ).distinct()
 

@@ -14,6 +14,9 @@ class TransactionService:
         # 1. Update balance atomically using F Expression and SELECT FOR UPDATE
         profile = Profile.objects.select_for_update().get(user=user)
         # We don't use .update() here because we want to ensure the profile exists and potentially check for negative balance
+        if amount < 0 and profile.balance < abs(amount):
+            raise ValueError(f"Insufficient funds. Required: {abs(amount)} TMT, Available: {profile.balance} TMT")
+        
         profile.balance = F('balance') + amount
         profile.save(update_fields=['balance'])
 

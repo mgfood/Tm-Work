@@ -1,5 +1,5 @@
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction, models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from apps.transactions.services import TransactionService
@@ -21,23 +21,21 @@ class EscrowService:
         if not created and escrow.status != Escrow.Status.CREATED:
             raise ValidationError("Funds are already locked or escrow is in final state.")
 
-        # Проверка баланса плательщика
-        from apps.profiles.models import Profile
-        profile = Profile.objects.get(user=payer)
-        if profile.balance < amount:
-            raise ValidationError(f"Insufficient funds. Required: {amount} TMT, Available: {profile.balance} TMT")
-
+        # Логирование операции и списание средств
+        try:
+            TransactionService.process_transaction(
+                user=payer,
+                amount=-amount,  # Отрицательное для плательщика
+                transaction_type=Transaction.Type.ESCROW_LOCK,
+                reference_id=str(escrow.id),
+                description=f"Funds locked for job: {job.title}"
+            )
+        except ValueError as e:
+            # Re-raise as ValidationError for DRF to handle as HTTP 400
+            raise ValidationError(str(e))
+        
         escrow.status = Escrow.Status.FUNDS_LOCKED
         escrow.save()
-
-        # Логирование операции и списание средств
-        TransactionService.process_transaction(
-            user=payer,
-            amount=-amount,  # Отрицательное для плательщика
-            transaction_type=Transaction.Type.ESCROW_LOCK,
-            reference_id=str(escrow.id),
-            description=f"Funds locked for job: {job.title}"
-        )
         
         return escrow
 
