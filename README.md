@@ -1,43 +1,40 @@
 # TmWork — Фриланс-платформа для Туркменистана
 
-TmWork — это современная платформа для взаимодействия заказчиков и исполнителей. Проект построен на **API-first архитектуре** с полностью разделенными backend (Django REST API) и frontend (React + Vite).
+TmWork — это современная, высоконагруженная платформа для взаимодействия заказчиков и исполнителей. Проект построен на **API-first архитектуре** и полностью готов к масштабированию. 
+
+Особенность платформы — сложная финансовая логика с эскроу-сервисом (безопасные сделки), строгая защита от дублирования транзакций (row-level locking), и встроенная ИИ-система для рекомендаций ленты и поисковой выдачи.
 
 ---
 
-## 🚀 Быстрый старт
+## 🚀 Быстрый старт (Локальная разработка)
 
-### Backend
+В проекте используется сверхбыстрый пакетный менеджер **uv**. 
 
-**Linux / macOS**
+### Backend (Django 5.2)
+
+1. Установите зависимости и активируйте окружение:
 ```bash
 cd backend
 uv venv
-source .venv/bin/activate
-uv sync
-cp .env.example .env
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
+source .venv/bin/activate  # Для Windows: .\.venv\Scripts\activate
+uv sync --all-extras
 ```
 
-**Windows**
-```powershell
-cd backend
-uv venv
-.\.venv\Scripts\activate
-uv sync
-copy .env.example .env
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
+2. Настройка базы данных и запуск:
+```bash
+cp .env.example .env
+# По умолчанию используется SQLite для быстрого старта (см. .env)
+uv run python manage.py migrate
+uv run python manage.py createsuperuser
+uv run python manage.py runserver
 ```
 
 **API:** [http://127.0.0.1:8000/api/v1/](http://127.0.0.1:8000/api/v1/)  
-**Swagger:** [http://127.0.0.1:8000/api/schema/swagger-ui/](http://127.0.0.1:8000/api/schema/swagger-ui/)
+**Swagger Docs:** [http://127.0.0.1:8000/api/schema/swagger-ui/](http://127.0.0.1:8000/api/schema/swagger-ui/)
 
 ---
 
-### Frontend
+### Frontend (React 18 + Vite)
 
 ```bash
 cd frontend
@@ -49,61 +46,53 @@ npm run dev
 
 ---
 
-## 📂 Структура проекта
+## 🛠 Технологии и Стек
 
-```
-TmWork/
-├── backend/           # Django 5.2 REST API
-├── frontend/          # React 18 приложение
-├── nginx/             # Конфигурация веб-сервера (для production)
-├── docs/              # Документация проекта
-└── scripts/           # Скрипты запуска и автоматизации
-```
-
----
-
-## 📚 Документация
-
-### Для разработчиков
-
-- **[backend.md](./docs/backend.md)** — Архитектура backend, структура приложений, Service Layer
-- **[frontend.md](./docs/frontend.md)** — Структура фронтенда, дизайн-система, API интеграция
-- **[backend/README.md](./backend/README.md)** — Навигация по backend документации
-- **[backend/API_DOCUMENTATION.md](./backend/API_DOCUMENTATION.md)** — Полная справка по API (~150+ endpoints)
-- **[backend/API_QUICKSTART.md](./backend/API_QUICKSTART.md)** — Быстрый старт с примерами
-
-### Для деплоя
-
-- **[deployment.md](./docs/deployment.md)** — Публикация в интернет (Localtunnel, ngrok)
-- **[links.md](./docs/links.md)** — Полезные ссылки проекта
-
-### Для AI помощников
-
-- **[GEMINI.md](./GEMINI.md)** — Правила разработки и принципы архитектуры
+| Компонент | Технологии | Назначение |
+|-----------|-----------|------------|
+| **Основа Backend** | Python 3.13, Django 5.2 | Ядро логики |
+| **API** | Django REST Framework | REST интерфейсы, JWT-аутентификация |
+| **Базы Данных** | PostgreSQL (Prod), SQLite (Dev) | Хранение данных (защита транзакций через `select_for_update`) |
+| **AI / ML** | Pure Python Heuristics (Fallback to scikit-learn) | "Невидимый ИИ" для ранжирования ленты и поиска |
+| **Фронтенд** | React 18, Vite, Tailwind CSS | UI / UX платформы |
 
 ---
 
-## 🛠 Технологии
+## 🧠 Ключевые особенности проекта (Для новых разработчиков)
 
-| Компонент | Технологии |
-|-----------|-----------|
-| **Backend** | Python 3.11, Django 5.2, DRF, JWT, PostgreSQL/SQLite |
-| **Frontend** | React 18, Vite, Tailwind CSS, Lucide Icons, Axios |
-| **DevTools** | drf-spectacular (Swagger), ESLint, PostCSS |
+Если вы только присоединились к проекту, обязательно изучите следующие модули:
+
+### 1. Безопасность Финансов (Escrow & Transactions)
+Все финансовые операции проходят через `TransactionService` (`backend/apps/transactions/services.py`). 
+**Правило:** Запрещено изменять баланс пользователя напрямую (`profile.balance += X`). Все операции строго атомарны с использованием блокировки строк БД `Profile.objects.select_for_update()`, что полностью исключает Race Conditions.
+
+### 2. "Невидимый ИИ" (Smart Match)
+Логика ленты рекомендаций и умного поиска лежит в `backend/apps/core/services/ml_service.py`. 
+Она работает автономно (эвристический алгоритм по совпадению навыков, рейтинга и опыта), но умеет динамически подхватывать внешнюю обученную ML-модель из папки `/ml/`, если она запущена.
+
+### 3. Инкапсуляция логики (Service Layer)
+Вьюхи (Views) в проекте **тонкие**. Вся бизнес-логика (например, принятие отклика или публикация заказа) вынесена в `services.py` каждого приложения (`JobService`, `EscrowService`, `ProposalService`).
+
+### 4. Ролевая модель
+Один пользователь (модель `User`) может переключать интерфейсы КЛИЕНТА и ФРИЛАНСЕРА без создания нового аккаунта. Права доступа зависят от ролей.
 
 ---
 
-## 👥 Командная разработка
+## 📚 Документация (Глубокое погружение)
 
-При работе в команде:
+Вся техническая документация находится в папке `docs/`:
 
-1. ⛔ **Никогда** не пушьте `.env` в репозиторий
-2. 📝 Все изменения моделей должны сопровождаться миграциями
-3. 🎨 Соблюдайте стиль кода (Black для Python, Prettier для JS)
-4. 🌿 Основная ветка — `main`, все фичи в `feature/название`
+- **[ONBOARDING.md](./docs/ONBOARDING.md)** — Главный документ для нового разработчика (Архитектура, принципы, как писать код).
+- **[API_DOCUMENTATION.md](./backend/API_DOCUMENTATION.md)** — Справка по API.
+- **[TESTING_GUIDE.md](./docs/TESTING_GUIDE.md)** — Как запускать и писать тесты (`pytest`).
 
 ---
 
-## 📄 Лицензия
+## 👥 Правила Командной Работы
 
-Proprietary (Собственность TmWork)
+1. ⛔ **Абсолютный запрет:** НИКОГДА не коммитьте файл `.env` в Git. В репозитории должен лежать только пустой `.env.example`.
+2. 📝 **Миграции обязательны:** Любое изменение моделей (`models.py`) должно сразу сопровождаться созданием миграции (`makemigrations`).
+3. 🌿 **Ветвление:** Основная ветка — `master`. Новые фичи пилите в `feature/название-фичи`. Багфиксы в `bugfix/описание`.
+
+---
+*Проект подготовлен к переходу на Этап 2 (Внедрение Redis и PostgreSQL через Docker).*
